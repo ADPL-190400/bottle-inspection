@@ -1,0 +1,4 @@
+Log file created at: 2026/03/24 16:13:57
+Running on machine: m2m-desktop
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+E0324 16:13:57.464529  8096 MVCAMAPI.cpp:382] CameraInit Failed, err:32774,Version:2.1.0.49,FriendlyName:EMVC-GECS507GC-POE,SN:056030220609

@@ -1,0 +1,1 @@
+# lấy kết quả từ inspection engine, hiển thị kết quả lên giao diện
