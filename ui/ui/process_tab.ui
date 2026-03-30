@@ -205,14 +205,11 @@
              <layout class="QHBoxLayout" name="horizontalLayout_8">
               <item>
                <widget class="QLabel" name="text_result">
-<<<<<<< HEAD
-=======
                 <property name="font">
                  <font>
                   <pointsize>150</pointsize>
                  </font>
                 </property>
->>>>>>> 5fe2763 (update 2703)
                 <property name="frameShape">
                  <enum>QFrame::Box</enum>
                 </property>

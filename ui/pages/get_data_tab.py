@@ -1,9 +1,6 @@
 from PyQt6 import uic, QtWidgets
-<<<<<<< HEAD
-=======
 from PyQt6.QtCore import QThread, pyqtSignal, QDir
 from PyQt6.QtGui import QFileSystemModel
->>>>>>> 5fe2763 (update 2703)
 import queue
 from core.path_manager import BASE_DIR
 import os
@@ -11,10 +8,6 @@ import re
 import threading
 import cv2
 from hardware.camera.batch_camera import BatchCamera
-<<<<<<< HEAD
-
-
-=======
 from training.patchcore_memory_bank import build_bank
 
 
@@ -35,7 +28,6 @@ class BuildBankWorker(QThread):
 # =========================================================================== #
 #  GET DATA TAB                                                                #
 # =========================================================================== #
->>>>>>> 5fe2763 (update 2703)
 class GetDataTab(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
@@ -44,16 +36,11 @@ class GetDataTab(QtWidgets.QWidget):
 
         self.btn_start_get_data.clicked.connect(self.start_get_data)
         self.btn_stop_get_data.clicked.connect(self.stop_get_data)
-<<<<<<< HEAD
-=======
         self.build_memory_bank.clicked.connect(self.build_memory)
->>>>>>> 5fe2763 (update 2703)
 
         self.data_manager   = None
         self.is_initialized = False
         self.is_saving      = False
-<<<<<<< HEAD
-=======
         self._build_worker  = None
 
         # QFileSystemModel cho treeView_img
@@ -79,7 +66,6 @@ class GetDataTab(QtWidgets.QWidget):
         self.btn_start_get_data.setEnabled(enabled)
         self.btn_stop_get_data.setEnabled(enabled)
         self.build_memory_bank.setEnabled(enabled)
->>>>>>> 5fe2763 (update 2703)
 
     # ----------------------------------------------------------------------- #
     def init_camera(self):
@@ -96,13 +82,10 @@ class GetDataTab(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------- #
     def start_get_data(self):
-<<<<<<< HEAD
-=======
         if self._build_worker and self._build_worker.isRunning():
             print("[GetData] Đang build Memory Bank, không thể thu thập.")
             return
 
->>>>>>> 5fe2763 (update 2703)
         self.init_camera()
         if not self.is_initialized:
             print("[GetData] Chưa init camera.")
@@ -115,11 +98,7 @@ class GetDataTab(QtWidgets.QWidget):
         if not save_dir:
             return
 
-<<<<<<< HEAD
-        self.data_manager.set_save_dir(save_dir)   # tự resume index
-=======
         self.data_manager.set_save_dir(save_dir)
->>>>>>> 5fe2763 (update 2703)
         self.data_manager.is_saving = True
         self.is_saving = True
         print(f"[GetData] ▶ Bắt đầu thu thập → {save_dir}")
@@ -139,23 +118,13 @@ class GetDataTab(QtWidgets.QWidget):
             path = line_edit.text().strip()
             if path:
                 os.makedirs(path, exist_ok=True)
-<<<<<<< HEAD
-                return path
-=======
                 self._set_tree_root(path)
                 return path
 
->>>>>>> 5fe2763 (update 2703)
         path = QtWidgets.QFileDialog.getExistingDirectory(self, "Chọn thư mục lưu ảnh")
         if not path:
             print("[GetData] Chưa chọn thư mục.")
             return None
-<<<<<<< HEAD
-        return path
-
-    # ----------------------------------------------------------------------- #
-    def closeEvent(self, event):
-=======
 
         self._set_tree_root(path)
         return path
@@ -184,7 +153,6 @@ class GetDataTab(QtWidgets.QWidget):
         if self._build_worker and self._build_worker.isRunning():
             self._build_worker.quit()
             self._build_worker.wait(3000)
->>>>>>> 5fe2763 (update 2703)
         if self.data_manager:
             self.data_manager.stop()
             self.data_manager.join(timeout=3)
@@ -286,11 +254,7 @@ class GetDataManager(threading.Thread):
                 continue
             filename = f"cam{cam_id + 1}_{self._trigger_count:04d}.jpg"
             path = os.path.join(self.save_dir, filename)
-<<<<<<< HEAD
-            cv2.imwrite(path, frame)
-=======
             cv2.imwrite(path, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
->>>>>>> 5fe2763 (update 2703)
             saved += 1
 
         print(f"[GetDataManager] 💾 trigger_{self._trigger_count:04d} → {saved} ảnh")

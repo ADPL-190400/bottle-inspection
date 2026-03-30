@@ -3,19 +3,12 @@ import numpy as np
 from pathlib import Path
 from PIL import Image
 from training.engine import get_engine
-<<<<<<< HEAD
-
-BANK_CACHE_PATH   = "memory_bank.pt" 
-TRAIN_GOOD_FOLDER = Path("data_cap/train/good")
-TEST_IMG_PATH     = Path("data_cap/fails/0.png")
-=======
 from core.path_manager import BASE_DIR
 
 
 BANK_CACHE_PATH   = "memory_bank.pt" 
 TRAIN_GOOD_FOLDER = Path("/home/m2m/Documents/Bottle-inspection/Application/project")
 # TEST_IMG_PATH     = Path("data_cap/fails/0.png")
->>>>>>> 5fe2763 (update 2703)
 
 device = torch.device("cuda")
 dtype  = torch.float16
@@ -26,19 +19,11 @@ STD  = torch.tensor([0.229, 0.224, 0.225], device=device, dtype=dtype).view(1, 3
 
 
 # "Standard Workspace": Mọi ảnh (2448x600, 2048x500...) đều đưa về chuẩn này để so sánh
-<<<<<<< HEAD
-STD_W, STD_H      = 224, 224 
-TARGET_BANK_SIZE  = 8000 
-
-
-model_engine = get_engine()
-=======
 STD_W, STD_H      =  224, 224
 TARGET_BANK_SIZE  = 8000 
 
 
 
->>>>>>> 5fe2763 (update 2703)
 
 # ─────────────────────────────────────────────
 # TIỀN XỬ LÝ LINH HOẠT
@@ -58,11 +43,8 @@ def preprocess_any_size(path):
 # XÂY DỰNG DYNAMIC BANK (CORESET)
 # ─────────────────────────────────────────────
 def build_bank():
-<<<<<<< HEAD
-=======
     model_engine = get_engine(STD_W, STD_H)
 
->>>>>>> 5fe2763 (update 2703)
     print(f"── Đang xây dựng Bank từ tập huấn luyện (Good images) ──")
     all_feats = []
     image_files = [f for f in TRAIN_GOOD_FOLDER.iterdir() if f.suffix.lower() in ['.png', '.jpg', '.jpeg']]
@@ -89,10 +71,4 @@ def build_bank():
 
 # # Khởi tạo Bank
 # memory_bank = build_bank()
-<<<<<<< HEAD
 # print(f"✅ Dynamic Bank Ready: {memory_bank.shape}")
-
-
-=======
-# print(f"✅ Dynamic Bank Ready: {memory_bank.shape}")
->>>>>>> 5fe2763 (update 2703)
