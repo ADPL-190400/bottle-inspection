@@ -1,4 +1,9 @@
 from PyQt6 import uic, QtWidgets
+<<<<<<< HEAD
+=======
+from PyQt6.QtCore import QThread, pyqtSignal, QDir
+from PyQt6.QtGui import QFileSystemModel
+>>>>>>> 5fe2763 (update 2703)
 import queue
 from core.path_manager import BASE_DIR
 import os
@@ -6,8 +11,31 @@ import re
 import threading
 import cv2
 from hardware.camera.batch_camera import BatchCamera
+<<<<<<< HEAD
 
 
+=======
+from training.patchcore_memory_bank import build_bank
+
+
+# =========================================================================== #
+#  BUILD WORKER (chạy build_bank trên QThread riêng)                          #
+# =========================================================================== #
+class BuildBankWorker(QThread):
+    finished = pyqtSignal(bool, str)   # (success, message)
+
+    def run(self):
+        try:
+            build_bank()
+            self.finished.emit(True, "✅ Build Memory Bank hoàn tất.")
+        except Exception as e:
+            self.finished.emit(False, f"❌ Build thất bại: {e}")
+
+
+# =========================================================================== #
+#  GET DATA TAB                                                                #
+# =========================================================================== #
+>>>>>>> 5fe2763 (update 2703)
 class GetDataTab(QtWidgets.QWidget):
     def __init__(self):
         super().__init__()
@@ -16,10 +44,42 @@ class GetDataTab(QtWidgets.QWidget):
 
         self.btn_start_get_data.clicked.connect(self.start_get_data)
         self.btn_stop_get_data.clicked.connect(self.stop_get_data)
+<<<<<<< HEAD
+=======
+        self.build_memory_bank.clicked.connect(self.build_memory)
+>>>>>>> 5fe2763 (update 2703)
 
         self.data_manager   = None
         self.is_initialized = False
         self.is_saving      = False
+<<<<<<< HEAD
+=======
+        self._build_worker  = None
+
+        # QFileSystemModel cho treeView_img
+        self._fs_model = QFileSystemModel()
+        self._fs_model.setFilter(QDir.Filter.AllEntries | QDir.Filter.NoDotAndDotDot)
+        self.treeView_img.setModel(self._fs_model)
+        # Chỉ hiện cột Name, ẩn Size / Type / Date
+        self.treeView_img.setColumnHidden(1, True)
+        self.treeView_img.setColumnHidden(2, True)
+        self.treeView_img.setColumnHidden(3, True)
+        self.treeView_img.setHeaderHidden(False)
+
+    # ----------------------------------------------------------------------- #
+    def _set_tree_root(self, path: str):
+        """Trỏ treeView_img vào thư mục đã chọn."""
+        root_index = self._fs_model.setRootPath(path)
+        self.treeView_img.setRootIndex(root_index)
+        self.treeView_img.expandAll()
+
+    # ----------------------------------------------------------------------- #
+    def _set_data_buttons_enabled(self, enabled: bool):
+        """Enable/disable các nút liên quan đến thu thập dữ liệu."""
+        self.btn_start_get_data.setEnabled(enabled)
+        self.btn_stop_get_data.setEnabled(enabled)
+        self.build_memory_bank.setEnabled(enabled)
+>>>>>>> 5fe2763 (update 2703)
 
     # ----------------------------------------------------------------------- #
     def init_camera(self):
@@ -36,6 +96,13 @@ class GetDataTab(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------- #
     def start_get_data(self):
+<<<<<<< HEAD
+=======
+        if self._build_worker and self._build_worker.isRunning():
+            print("[GetData] Đang build Memory Bank, không thể thu thập.")
+            return
+
+>>>>>>> 5fe2763 (update 2703)
         self.init_camera()
         if not self.is_initialized:
             print("[GetData] Chưa init camera.")
@@ -48,7 +115,11 @@ class GetDataTab(QtWidgets.QWidget):
         if not save_dir:
             return
 
+<<<<<<< HEAD
         self.data_manager.set_save_dir(save_dir)   # tự resume index
+=======
+        self.data_manager.set_save_dir(save_dir)
+>>>>>>> 5fe2763 (update 2703)
         self.data_manager.is_saving = True
         self.is_saving = True
         print(f"[GetData] ▶ Bắt đầu thu thập → {save_dir}")
@@ -68,15 +139,52 @@ class GetDataTab(QtWidgets.QWidget):
             path = line_edit.text().strip()
             if path:
                 os.makedirs(path, exist_ok=True)
+<<<<<<< HEAD
                 return path
+=======
+                self._set_tree_root(path)
+                return path
+
+>>>>>>> 5fe2763 (update 2703)
         path = QtWidgets.QFileDialog.getExistingDirectory(self, "Chọn thư mục lưu ảnh")
         if not path:
             print("[GetData] Chưa chọn thư mục.")
             return None
+<<<<<<< HEAD
         return path
 
     # ----------------------------------------------------------------------- #
     def closeEvent(self, event):
+=======
+
+        self._set_tree_root(path)
+        return path
+
+    # ----------------------------------------------------------------------- #
+    def build_memory(self):
+        if self._build_worker and self._build_worker.isRunning():
+            print("[GetData] Đang build rồi.")
+            return
+
+        self.stop_get_data()
+        self._set_data_buttons_enabled(False)
+        print("[GetData] 🔨 Bắt đầu build Memory Bank...")
+
+        self._build_worker = BuildBankWorker()
+        self._build_worker.finished.connect(self._on_build_finished)
+        self._build_worker.start()
+
+    # ----------------------------------------------------------------------- #
+    def _on_build_finished(self, success: bool, message: str):
+        print(f"[GetData] {message}")
+        self._set_data_buttons_enabled(True)
+
+    # ----------------------------------------------------------------------- #
+    def closeEvent(self, event):
+        if self._build_worker and self._build_worker.isRunning():
+            self._build_worker.quit()
+            self._build_worker.wait(3000)
+>>>>>>> 5fe2763 (update 2703)
         if self.data_manager:
             self.data_manager.stop()
             self.data_manager.join(timeout=3)
@@ -178,7 +286,11 @@ class GetDataManager(threading.Thread):
                 continue
             filename = f"cam{cam_id + 1}_{self._trigger_count:04d}.jpg"
             path = os.path.join(self.save_dir, filename)
+<<<<<<< HEAD
             cv2.imwrite(path, frame)
+=======
+            cv2.imwrite(path, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+>>>>>>> 5fe2763 (update 2703)
             saved += 1
 
         print(f"[GetDataManager] 💾 trigger_{self._trigger_count:04d} → {saved} ảnh")

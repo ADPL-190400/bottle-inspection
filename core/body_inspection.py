@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # # lấy ảnh từ camera, xử lý ảnh
 # import threading
 # import os
@@ -617,6 +618,8 @@
 
 
 
+=======
+>>>>>>> 5fe2763 (update 2703)
 import threading
 import queue
 import os
@@ -626,6 +629,10 @@ import numpy as np
 from pathlib import Path
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor
+<<<<<<< HEAD
+=======
+import cv2
+>>>>>>> 5fe2763 (update 2703)
 
 try:
     from torch2trt import torch2trt, TRTModule
@@ -637,6 +644,13 @@ BANK_CACHE_PATH  = "memory_bank.pt"
 TRT_ENGINE_PATH  = "backbone_flex_224x224.pth"
 STD_W, STD_H     = 224, 224
 
+<<<<<<< HEAD
+=======
+# WideResNet50 backbone → feature map 28x28 = 784 patches
+FEAT_H = 28
+FEAT_W = 28
+
+>>>>>>> 5fe2763 (update 2703)
 device   = torch.device("cuda")
 dtype    = torch.float16
 
@@ -648,6 +662,7 @@ STD_NORM = torch.tensor([0.229, 0.224, 0.225], device=device, dtype=dtype).view(
 #  TIỀN XỬ LÝ (CPU)                                                           #
 # =========================================================================== #
 def _to_pil_rgb(img_input) -> tuple:
+<<<<<<< HEAD
     """Chuyển về PIL RGB + lấy kích thước gốc. Chạy trên CPU thread."""
     if isinstance(img_input, (str, Path)):
         img = Image.open(img_input).convert("RGB")
@@ -666,6 +681,48 @@ def _to_pil_rgb(img_input) -> tuple:
 
 def _arr_to_tensor(arr: np.ndarray) -> torch.Tensor:
     """uint8 HWC numpy → normalized float16 [1,C,H,W] GPU tensor."""
+=======
+    """
+    Chuyển về PIL RGB + lấy kích thước gốc. Chạy trên CPU thread.
+    Hỗ trợ:
+      - Path / str          : đọc file từ disk
+      - numpy RGB  (H,W,3)  : camera trả về RGB trực tiếp → dùng luôn
+      - numpy RGBA (H,W,4)  : bỏ alpha channel
+      - numpy Gray (H,W)    : grayscale → convert RGB
+      - PIL Image           : giữ nguyên
+    LƯU Ý: Camera này trả về RGB (không phải BGR) – KHÔNG flip channel.
+    """
+    if isinstance(img_input, (str, Path)):
+        img = Image.open(img_input).convert("RGB")
+
+    elif isinstance(img_input, np.ndarray):
+        arr = np.ascontiguousarray(img_input)
+        if arr.ndim == 2:
+            img = Image.fromarray(arr).convert("RGB")
+        elif arr.ndim == 3:
+            c = arr.shape[2]
+            if c == 3:
+                # Camera trả về RGB trực tiếp – KHÔNG flip
+                img = Image.fromarray(arr, mode="RGB")
+            elif c == 4:
+                # RGBA – bỏ alpha
+                img = Image.fromarray(arr, mode="RGBA").convert("RGB")
+            else:
+                img = Image.fromarray(arr).convert("RGB")
+        else:
+            img = Image.fromarray(arr).convert("RGB")
+    else:
+        img = img_input.convert("RGB")
+
+    orig_size = img.size                                   # (w, h)
+    img_res   = img.resize((STD_W, STD_H), Image.LANCZOS)
+    arr_out   = np.array(img_res, dtype=np.uint8)         # H W C, uint8 RGB
+    return arr_out, orig_size
+
+
+def _arr_to_tensor(arr: np.ndarray) -> torch.Tensor:
+    """uint8 HWC numpy (RGB) → normalized float16 [1,C,H,W] GPU tensor."""
+>>>>>>> 5fe2763 (update 2703)
     t = (
         torch.from_numpy(arr)
         .to(device, non_blocking=True)
@@ -677,6 +734,95 @@ def _arr_to_tensor(arr: np.ndarray) -> torch.Tensor:
 
 
 # =========================================================================== #
+<<<<<<< HEAD
+=======
+#  ANOMALY MAP – heatmap + bounding boxes vùng bất thường                     #
+# =========================================================================== #
+def _build_anomaly_map(patch_scores: torch.Tensor,
+                       orig_w: int, orig_h: int,
+                       threshold: float) -> dict:
+    """
+    Từ score từng patch → heatmap full-res + bounding boxes vùng bất thường.
+
+    patch_scores : [784]  fp32 tensor – score từng patch
+    orig_w, orig_h: kích thước ảnh gốc từ camera
+    threshold    : ngưỡng anomaly
+
+    Trả về dict:
+        heatmap_gray  : numpy (orig_h, orig_w) uint8  – 0..255 để visualize
+        anomaly_mask  : numpy (orig_h, orig_w) bool   – True = vùng lỗi
+        boxes         : list[(x1,y1,x2,y2)]  tọa độ trên ảnh gốc
+        patch_scores_2d: numpy (FEAT_H, FEAT_W) float32 – debug
+    """
+    # 1. Reshape về 2D feature map (28x28)
+    scores_2d = patch_scores.cpu().float().numpy().reshape(FEAT_H, FEAT_W)
+
+    # 2. Upsample về kích thước ảnh gốc
+    heatmap_full = cv2.resize(
+        scores_2d, (orig_w, orig_h), interpolation=cv2.INTER_LINEAR
+    )  # (orig_h, orig_w) float32
+
+    # 3. Normalize về 0-255 để visualize
+    s_min, s_max = heatmap_full.min(), heatmap_full.max()
+    if s_max > s_min:
+        heatmap_norm = ((heatmap_full - s_min) / (s_max - s_min) * 255).astype(np.uint8)
+    else:
+        heatmap_norm = np.zeros((orig_h, orig_w), dtype=np.uint8)
+
+    # 4. Mask vùng bất thường (score > threshold)
+    anomaly_mask = (heatmap_full > threshold).astype(np.uint8)
+
+    # 5. Tìm bounding boxes từ contours
+    boxes = []
+    if anomaly_mask.any():
+        contours, _ = cv2.findContours(
+            anomaly_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
+        for cnt in contours:
+            if cv2.contourArea(cnt) < 100:   # bỏ vùng quá nhỏ (< 100 px²)
+                continue
+            x, y, bw, bh = cv2.boundingRect(cnt)
+            boxes.append((x, y, x + bw, y + bh))
+
+    return {
+        "heatmap_gray"   : heatmap_norm,                  # (H, W) uint8
+        "anomaly_mask"   : anomaly_mask.astype(bool),     # (H, W) bool
+        "boxes"          : boxes,                         # [(x1,y1,x2,y2), ...]
+        "patch_scores_2d": scores_2d,                     # (28,28) float32
+    }
+
+
+def draw_anomaly_overlay(frame_bgr: np.ndarray, anomaly_info: dict,
+                         alpha: float = 0.5) -> np.ndarray:
+    """
+    Vẽ heatmap + bounding boxes lên frame BGR để hiển thị.
+
+    frame_bgr   : numpy (H, W, 3) BGR
+    anomaly_info: dict từ _build_anomaly_map
+    alpha       : độ trong suốt heatmap (0=ẩn, 1=đặc)
+    Trả về frame BGR mới đã overlay.
+    """
+    img = frame_bgr.copy()
+    h, w = img.shape[:2]
+
+    # 1. Heatmap màu: xanh=bình thường, đỏ=lỗi
+    heatmap_color = cv2.applyColorMap(anomaly_info["heatmap_gray"], cv2.COLORMAP_JET)
+    heatmap_color = cv2.resize(heatmap_color, (w, h))
+
+    # 2. Blend heatmap lên ảnh gốc
+    cv2.addWeighted(heatmap_color, alpha, img, 1 - alpha, 0, img)
+
+    # 3. Vẽ bounding boxes vùng lỗi
+    for (x1, y1, x2, y2) in anomaly_info["boxes"]:
+        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        cv2.putText(img, "DEFECT", (x1, max(y1 - 6, 12)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 255), 2, cv2.LINE_AA)
+
+    return img
+
+
+# =========================================================================== #
+>>>>>>> 5fe2763 (update 2703)
 #  INFERENCE – TỪNG ẢNH MỘT (TRT batch=1), PREPROCESS SONG SONG              #
 # =========================================================================== #
 def run_inspection_batch(images: list, model_engine, memory_bank,
@@ -684,11 +830,36 @@ def run_inspection_batch(images: list, model_engine, memory_bank,
     """
     - Preprocess song song trên CPU (ThreadPoolExecutor)
     - Forward từng ảnh một qua TRT engine (batch=1)
+<<<<<<< HEAD
     - Tính distance 1 lần cho tất cả features
 
     images  : list[PIL.Image | numpy.ndarray | None]  – len = số cam
     Trả về  : list[dict | None]  – cùng thứ tự cam_id
     """
+=======
+    - Tính distance 1 lần cho tất cả features (fp32 tránh overflow)
+    - Lấy MAX score trên tất cả patches của mỗi ảnh
+    - Tính heatmap + bounding boxes vùng bất thường
+
+    images  : list[PIL.Image | numpy.ndarray | None]  – len = số cam
+    Trả về  : list[dict | None]  – cùng thứ tự cam_id
+
+    Mỗi dict kết quả:
+        score        : float  – anomaly score tổng
+        is_ok        : bool
+        result       : str    – "OK (ĐẠT)" | "NG (LỖI)"
+        time_ms      : float
+        img_size     : (w, h)
+        anomaly_info : {
+            heatmap_gray   : numpy (H,W) uint8
+            anomaly_mask   : numpy (H,W) bool
+            boxes          : [(x1,y1,x2,y2), ...]  ← tọa độ vùng lỗi ảnh gốc
+            patch_scores_2d: numpy (28,28) float32
+        }
+    """
+
+    print('[BodyInspection] run inspection')
+>>>>>>> 5fe2763 (update 2703)
     results = [None] * len(images)
 
     # ── Lọc cam có ảnh thật ────────────────────────────────────────────────
@@ -707,15 +878,24 @@ def run_inspection_batch(images: list, model_engine, memory_bank,
 
     with ThreadPoolExecutor(max_workers=len(valid)) as pool:
         preprocessed = list(pool.map(preprocess_one, valid))
+<<<<<<< HEAD
     # preprocessed: [(cam_id, arr, orig_size), ...]  – thứ tự không đảm bảo
     preprocessed.sort(key=lambda x: x[0])            # sort lại theo cam_id
 
     # ── Forward từng ảnh qua TRT (batch=1) ────────────────────────────────
     features_list = []   # [(cam_id, orig_size, feat)]
+=======
+
+    preprocessed.sort(key=lambda x: x[0])
+
+    # ── Forward từng ảnh qua TRT (batch=1) ────────────────────────────────
+    features_list = []  # [(cam_id, orig_size, feat_tensor)]
+>>>>>>> 5fe2763 (update 2703)
 
     torch.cuda.synchronize()
     with torch.inference_mode():
         for cam_id, arr, orig_size in preprocessed:
+<<<<<<< HEAD
             img_t = _arr_to_tensor(arr)               # [1, C, H, W]
             feat  = model_engine(img_t)               # [1, D]
             features_list.append((cam_id, orig_size, feat))
@@ -743,6 +923,59 @@ def run_inspection_batch(images: list, model_engine, memory_bank,
             "result":   label,
             "time_ms":  ms_each,
             "img_size": (w, h),
+=======
+            img_t = _arr_to_tensor(arr)          # [1, C, H, W]
+            feat  = model_engine(img_t)          # [784, 1536]
+            features_list.append((cam_id, orig_size, feat))
+
+    # ── Tính distance (fp32 tránh overflow) ───────────────────────────────
+    with torch.inference_mode():
+        features_all    = torch.cat([f for _, _, f in features_list], dim=0)  # [K*784, 1536]
+        patches_per_img = features_list[0][2].shape[0]   # 784
+        K               = len(features_list)
+
+        feat_f32 = features_all.float()
+        bank_f32 = memory_bank.float()
+
+        a_sq    = (feat_f32 ** 2).sum(dim=1, keepdim=True)
+        b_sq    = (bank_f32 ** 2).sum(dim=1).unsqueeze(0)
+        dist_sq = (
+            a_sq + b_sq - 2.0 * torch.mm(feat_f32, bank_f32.t())
+        ).clamp(min=1e-6)
+
+        # Score từng patch: [K*784]
+        patch_dist = dist_sq.min(dim=1).values.sqrt()
+
+        # Reshape: [K, 784]
+        patch_dist = patch_dist.reshape(K, patches_per_img)
+
+        # Anomaly score mỗi ảnh = MAX patch
+        scores = patch_dist.max(dim=1).values                     # [K]
+
+    torch.cuda.synchronize()
+    ms_total = (time.perf_counter() - t0) * 1000
+    ms_each  = ms_total / K
+
+    # ── Gắn kết quả + anomaly map ─────────────────────────────────────────
+    for k, (cam_id, (w, h), _) in enumerate(features_list):
+        s     = scores[k].item()
+        label = "NG (LỖI)" if s > threshold else "OK (ĐẠT)"
+
+        anomaly_info = _build_anomaly_map(
+            patch_scores = patch_dist[k],   # [784]
+            orig_w       = w,
+            orig_h       = h,
+            threshold    = threshold,
+        )
+
+        results[cam_id] = {
+            "score"       : s,
+            "is_ok"       : s <= threshold,
+            "result"      : label,
+            "time_ms"     : ms_each,
+            "img_size"    : (w, h),
+            "anomaly_info": anomaly_info,
+>>>>>>> 5fe2763 (update 2703)
         }
 
     # ── Log ───────────────────────────────────────────────────────────────
@@ -751,8 +984,15 @@ def run_inspection_batch(images: list, model_engine, memory_bank,
         if r is None:
             print(f"  cam[{cam_id}] ⚫ SKIP (None)")
         else:
+<<<<<<< HEAD
             w, h = r["img_size"]
             print(f"  cam[{cam_id}] {r['result']}  score={r['score']:.4f}  {w}x{h}")
+=======
+            w, h  = r["img_size"]
+            boxes = r["anomaly_info"]["boxes"]
+            print(f"  cam[{cam_id}] {r['result']}  score={r['score']:.4f}  "
+                  f"{w}x{h}  defect_boxes={len(boxes)}")
+>>>>>>> 5fe2763 (update 2703)
 
     return results
 
@@ -788,8 +1028,21 @@ def load_system():
 class BodyWorker(threading.Thread):
     """
     Nhận (trigger_id, [img1, img2, img3, img4]) từ frame_input_queue.
+<<<<<<< HEAD
     Mỗi img: PIL.Image | numpy.ndarray | None.
     Gửi (trigger_id, list[dict|None]) ra result_output_queue – thứ tự cam_id.
+=======
+    Mỗi img: PIL.Image | numpy.ndarray (RGB hoặc RGBA) | None.
+    Gửi (trigger_id, list[dict|None]) ra result_output_queue – thứ tự cam_id.
+
+    Mỗi dict kết quả có thêm "anomaly_info" chứa:
+        boxes          : [(x1,y1,x2,y2), ...]  – tọa độ vùng lỗi trên ảnh gốc
+        heatmap_gray   : numpy (H,W) uint8      – để visualize
+        anomaly_mask   : numpy (H,W) bool
+        patch_scores_2d: numpy (28,28) float32
+
+    Dùng draw_anomaly_overlay(frame_bgr, result["anomaly_info"]) để vẽ lên ảnh.
+>>>>>>> 5fe2763 (update 2703)
     """
 
     def __init__(
@@ -812,6 +1065,20 @@ class BodyWorker(threading.Thread):
         if self.memory_bank is None:
             raise RuntimeError("❌ Không load được memory bank.")
 
+<<<<<<< HEAD
+=======
+        self._warmup()
+
+    def _warmup(self, n: int = 3):
+        print(f"[{self.name}] 🔥 Warming up TRT engine ({n} lần)...")
+        dummy = torch.zeros((1, 3, STD_H, STD_W), device=device, dtype=dtype)
+        with torch.inference_mode():
+            for _ in range(n):
+                _ = self.model_engine(dummy)
+        torch.cuda.synchronize()
+        print(f"[{self.name}] ✅ Warm-up xong.")
+
+>>>>>>> 5fe2763 (update 2703)
     def run(self):
         print(f"[{self.name}] ▶ Bắt đầu. Chờ từ queue …")
 

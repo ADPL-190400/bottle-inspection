@@ -4,21 +4,33 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision.models import wide_resnet50_2, Wide_ResNet50_2_Weights
 from torch2trt import torch2trt, TRTModule
+<<<<<<< HEAD
+=======
+from core.path_manager import BASE_DIR
+>>>>>>> 5fe2763 (update 2703)
 
 
 
 
 # "Standard Workspace": Mọi ảnh (2448x600, 2048x500...) đều đưa về chuẩn này để so sánh
+<<<<<<< HEAD
 STD_W, STD_H      = 224, 224 
 TARGET_BANK_SIZE  = 8000 
 TRT_ENGINE_PATH   = "/home/m2m/Documents/Bottle-inspection/Application/backbone_flex_224x224.pth"
+=======
+# STD_W, STD_H      = 224, 224 
+# TRT_ENGINE_PATH   = "/home/m2m/Documents/Bottle-inspection/Application/backbone_flex_224x224.pth"
+>>>>>>> 5fe2763 (update 2703)
 
 device = torch.device("cuda")
 dtype  = torch.float16
 
+<<<<<<< HEAD
 # Hằng số chuẩn hóa GPU
 MEAN = torch.tensor([0.485, 0.456, 0.406], device=device, dtype=dtype).view(1, 3, 1, 1)
 STD  = torch.tensor([0.229, 0.224, 0.225], device=device, dtype=dtype).view(1, 3, 1, 1)
+=======
+>>>>>>> 5fe2763 (update 2703)
 
 # ─────────────────────────────────────────────
 # 2. ĐỊNH NGHĨA MODEL (HỖ TRỢ DYNAMIC SHAPE)
@@ -53,7 +65,13 @@ class FlexibleBackbone(nn.Module):
 # ─────────────────────────────────────────────
 # QUẢN LÝ ENGINE (BUILD/LOAD)
 # ─────────────────────────────────────────────
+<<<<<<< HEAD
 def get_engine():
+=======
+def get_engine(STD_W, STD_H ):
+    engine_name = f"backbone_{STD_W}x{STD_H}.pth"
+    TRT_ENGINE_PATH = os.path.join(BASE_DIR, engine_name)
+>>>>>>> 5fe2763 (update 2703)
     if os.path.exists(TRT_ENGINE_PATH):
         print(f"🚀 Loading Flexible Engine ({STD_W}x{STD_H})...")
         model_trt = TRTModule()
@@ -66,5 +84,9 @@ def get_engine():
         # Tối ưu hóa bộ nhớ 1GB cho TensorRT
         model_trt = torch2trt(model_raw, [dummy], fp16_mode=True, max_workspace_size=1 << 30)
         torch.save(model_trt.state_dict(), TRT_ENGINE_PATH)
+<<<<<<< HEAD
         return model_trt
 
+=======
+        return model_trt
+>>>>>>> 5fe2763 (update 2703)

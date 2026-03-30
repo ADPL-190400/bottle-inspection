@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # #coding=utf-8
 # import threading
 # from core.path_manager import BASE_DIR
@@ -149,6 +150,8 @@
 
 
 #coding=utf-8
+=======
+>>>>>>> 5fe2763 (update 2703)
 import threading
 from core.path_manager import BASE_DIR
 import os
@@ -158,7 +161,11 @@ from hardware.camera import mvsdk
 from hardware.gpio.trigger_input_camera import TriggerCamera
 import queue
 import time
+<<<<<<< HEAD
 
+=======
+from PIL import Image
+>>>>>>> 5fe2763 (update 2703)
 
 
 class BatchCamera(threading.Thread):
@@ -166,6 +173,7 @@ class BatchCamera(threading.Thread):
     def __init__(self, output_queue, stop_event):
         super().__init__()
 
+<<<<<<< HEAD
         self.cameras = []
         self.buffers = []
         self.mono_flags = []
@@ -175,6 +183,14 @@ class BatchCamera(threading.Thread):
 
         
         # self.trigger_queue = queue.Queue(maxsize=1)
+=======
+        self.cameras    = []
+        self.buffers    = []
+        self.mono_flags = []
+
+        self.output_queue = output_queue
+        self.stop_event   = stop_event
+>>>>>>> 5fe2763 (update 2703)
 
         self.init_cameras()
         self.init_trigger_camera()
@@ -186,8 +202,11 @@ class BatchCamera(threading.Thread):
         DevList = mvsdk.CameraEnumerateDevice()
         print(f"[BatchCamera] Detected {len(DevList)} camera(s)")
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> 5fe2763 (update 2703)
         if len(DevList) < 1:
             print("No camera found")
             return
@@ -199,6 +218,7 @@ class BatchCamera(threading.Thread):
                 print("CameraInit Failed:", e.message)
                 continue
 
+<<<<<<< HEAD
             config_path = os.path.join(BASE_DIR, "3.config")
             if os.path.exists(config_path):
                 mvsdk.CameraReadParameterFromFile(hCamera, config_path)
@@ -212,12 +232,31 @@ class BatchCamera(threading.Thread):
             mvsdk.CameraPlay(hCamera)
 
             FrameBufferSize = cap.sResolutionRange.iWidthMax * cap.sResolutionRange.iHeightMax * (1 if mono else 3)
+=======
+            config_path = os.path.join(BASE_DIR, "19.config")
+            if os.path.exists(config_path):
+                print('config file camera', config_path)
+                mvsdk.CameraReadParameterFromFile(hCamera, config_path)
+
+            cap  = mvsdk.CameraGetCapability(hCamera)
+            mono = (cap.sIspCapacity.bMonoSensor != 0)
+
+            mvsdk.CameraSetTriggerMode(hCamera, 1)
+            mvsdk.CameraPlay(hCamera)
+
+            FrameBufferSize = (
+                cap.sResolutionRange.iWidthMax
+                * cap.sResolutionRange.iHeightMax
+                * (1 if mono else 3)
+            )
+>>>>>>> 5fe2763 (update 2703)
             pFrameBuffer = mvsdk.CameraAlignMalloc(FrameBufferSize, 16)
 
             self.cameras.append(hCamera)
             self.buffers.append(pFrameBuffer)
             self.mono_flags.append(mono)
 
+<<<<<<< HEAD
 
     def init_trigger_camera(self):
         stop_event = threading.Event()
@@ -227,10 +266,21 @@ class BatchCamera(threading.Thread):
 
 
 
+=======
+    def init_trigger_camera(self):
+        stop_event         = threading.Event()
+        self.trigger_queue = queue.Queue(maxsize=1)
+        self.thread_trigger_camera = TriggerCamera(
+            self.trigger_queue, stop_event=stop_event, offset=3
+        )
+        self.thread_trigger_camera.start()
+
+>>>>>>> 5fe2763 (update 2703)
     # ================= CORE =================
 
     def capture_all_sync(self):
         """
+<<<<<<< HEAD
         Trigger tất cả camera → lấy frame
         """
 
@@ -241,6 +291,19 @@ class BatchCamera(threading.Thread):
             mvsdk.CameraSoftTrigger(cam)
 
         # 2. lấy frame ngay sau đó
+=======
+        Trigger tất cả camera → lấy frame.
+        ✅ FIX: dùng .copy() để array tự own memory,
+                tránh bị ghi đè khi camera capture frame tiếp theo.
+        """
+        frames = []
+
+        # 1. Trigger tất cả camera gần như cùng lúc
+        for cam in self.cameras:
+            mvsdk.CameraSoftTrigger(cam)
+
+        # 2. Lấy frame ngay sau đó
+>>>>>>> 5fe2763 (update 2703)
         for cam, buf, mono in zip(self.cameras, self.buffers, self.mono_flags):
             try:
                 pRawData, FrameHead = mvsdk.CameraGetImageBuffer(cam, 200)
@@ -252,7 +315,15 @@ class BatchCamera(threading.Thread):
                     mvsdk.CameraFlipFrameBuffer(buf, FrameHead, 1)
 
                 frame_data = (mvsdk.c_ubyte * FrameHead.uBytes).from_address(buf)
+<<<<<<< HEAD
                 frame = np.frombuffer(frame_data, dtype=np.uint8)
+=======
+
+                # ✅ FIX CHÍNH: .copy() để array own memory độc lập
+                # Không có .copy() → array trỏ thẳng vào buf (C pointer)
+                # → bị ghi đè khi trigger tiếp theo → data hỏng → score sai
+                frame = np.frombuffer(frame_data, dtype=np.uint8).copy()
+>>>>>>> 5fe2763 (update 2703)
 
                 frame = frame.reshape(
                     (FrameHead.iHeight, FrameHead.iWidth, 1 if mono else 3)
@@ -269,7 +340,10 @@ class BatchCamera(threading.Thread):
     # ================= THREAD =================
 
     def run(self):
+<<<<<<< HEAD
 
+=======
+>>>>>>> 5fe2763 (update 2703)
         print("[BatchCamera] Running... waiting for trigger")
 
         while not self.stop_event.is_set():
@@ -279,10 +353,15 @@ class BatchCamera(threading.Thread):
                     continue
 
                 trigger_time = self.trigger_queue.get()
+<<<<<<< HEAD
 
                 frames = self.capture_all_sync()
 
                 # push sang pipeline
+=======
+                frames       = self.capture_all_sync()
+
+>>>>>>> 5fe2763 (update 2703)
                 try:
                     self.output_queue.put_nowait((trigger_time, frames))
                 except queue.Full:
@@ -296,6 +375,10 @@ class BatchCamera(threading.Thread):
             mvsdk.CameraAlignFree(buf)
             mvsdk.CameraUnInit(cam)
 
+<<<<<<< HEAD
         # stop thread trigger camera
         self.thread_trigger_camera.stop_event.set()
         
+=======
+        self.thread_trigger_camera.stop_event.set()
+>>>>>>> 5fe2763 (update 2703)

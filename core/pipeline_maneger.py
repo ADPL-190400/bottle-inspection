@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # import threading
 # import queue
 # import time
@@ -252,13 +253,20 @@
 
 
 
+=======
+>>>>>>> 5fe2763 (update 2703)
 import threading
 import queue
 import time
 import cv2
 import numpy as np
 from hardware.camera.batch_camera import BatchCamera
+<<<<<<< HEAD
 from core.body_inspection import BodyWorker
+=======
+from hardware.sorting.sorting_actuator import SortingActuator
+from core.body_inspection import BodyWorker, draw_anomaly_overlay
+>>>>>>> 5fe2763 (update 2703)
 
 
 class PipelineManager(threading.Thread):
@@ -268,7 +276,11 @@ class PipelineManager(threading.Thread):
             │ frames_queue → (trigger_id, [img1,img2,img3,img4,img5])
             ▼
         PipelineManager.run()
+<<<<<<< HEAD
             ├── show_queue[cam_key] ← raw frame (hiển thị ngay, không chờ AI)
+=======
+            ├── show_queue[cam_key] ← (frame_bgr, None)   raw frame (hiển thị ngay)
+>>>>>>> 5fe2763 (update 2703)
             └── body_in_queue      ← (trigger_id, [img1,img2,img3,img4])
                     │
                     ▼
@@ -276,18 +288,38 @@ class PipelineManager(threading.Thread):
                     │ result_queue → (trigger_id, list[dict|None])
                     ▼
                 _result_loop()
+<<<<<<< HEAD
                     └── show_queue[cam_key] ← frame đã overlay OK/NG
     """
 
     def __init__(self, show_queue, threshold: float = 14.0):
         super().__init__(daemon=True, name="PipelineManager")
         self.show_queue  = show_queue   # dict[str, queue.Queue]  – key "1".."5"
+=======
+                    ├── show_queue[cam_key] ← (frame_overlay, is_ok)
+                    └── sorting_queue       ← batch_ok (bool)
+                                │
+                                ▼
+                        SortingActuator
+                            └── chờ trigger vật lý → lấy batch_ok → log/actuate
+
+    show_queue nhận tuple (frame_bgr: np.ndarray, is_ok: bool | None)
+        is_ok = None  → raw frame chưa có kết quả AI
+        is_ok = True  → AI phán OK
+        is_ok = False → AI phán NG
+    """
+
+    def __init__(self, show_queue, threshold: float = 18):
+        super().__init__(daemon=True, name="PipelineManager")
+        self.show_queue  = show_queue   # dict[str, queue.Queue] – key "1".."5"
+>>>>>>> 5fe2763 (update 2703)
         self.threshold   = threshold
         self.running     = True
 
         self.frames_queue  = queue.Queue(maxsize=1)
         self.body_in_queue = queue.Queue(maxsize=4)
         self.result_queue  = queue.Queue()
+<<<<<<< HEAD
         self._stop_event   = threading.Event()
 
         # Giữ raw frame mới nhất mỗi cam để overlay kết quả AI lên sau
@@ -297,6 +329,19 @@ class PipelineManager(threading.Thread):
     def run(self):
         thread_camera = None
         thread_body   = None
+=======
+        self.sorting_queue = queue.Queue(maxsize=20)
+        self._stop_event   = threading.Event()
+
+        # Giữ raw frame BGR mới nhất mỗi cam để overlay kết quả AI lên sau
+        self._last_frames = {}   # cam_key → numpy.ndarray (BGR)
+
+    # ----------------------------------------------------------------------- #
+    def run(self):
+        thread_camera  = None
+        thread_body    = None
+        thread_sorting = None
+>>>>>>> 5fe2763 (update 2703)
 
         try:
             # ── BatchCamera ─────────────────────────────────────────────────
@@ -309,6 +354,19 @@ class PipelineManager(threading.Thread):
                 self.running = False
                 return
 
+<<<<<<< HEAD
+=======
+            # ── SortingActuator ─────────────────────────────────────────────
+            try:
+                thread_sorting = SortingActuator(self.sorting_queue, self._stop_event)
+                thread_sorting.start()
+                print("[Pipeline] SortingActuator started.")
+            except Exception as e:
+                print(f"[Pipeline] ❌ SortingActuator khởi tạo thất bại: {e}")
+                self.running = False
+                return
+
+>>>>>>> 5fe2763 (update 2703)
             # ── BodyWorker ──────────────────────────────────────────────────
             try:
                 thread_body = BodyWorker(
@@ -341,15 +399,27 @@ class PipelineManager(threading.Thread):
                 except queue.Empty:
                     continue
 
+<<<<<<< HEAD
                 # 1. Show raw frame ngay lên UI (không chờ AI)
+=======
+                # 1. Show raw frame ngay lên UI – is_ok=None (chưa có kết quả AI)
+>>>>>>> 5fe2763 (update 2703)
                 for cam_id, frame in enumerate(frames):
                     cam_key = str(cam_id + 1)
                     if frame is None:
                         continue
+<<<<<<< HEAD
                     self._last_frames[cam_key] = frame          # lưu lại để overlay
                     self._put_drop(self.show_queue.get(cam_key), frame)
 
                 # 2. Gửi 4 ảnh đầu vào BodyWorker
+=======
+                    frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                    self._last_frames[cam_key] = frame_bgr
+                    self._put_drop(self.show_queue.get(cam_key), (frame_bgr, None))
+
+                # 2. Gửi 4 ảnh đầu vào BodyWorker – RGB gốc, KHÔNG dùng frame_bgr
+>>>>>>> 5fe2763 (update 2703)
                 batch_4 = frames[:4]
                 self._put_drop(self.body_in_queue, (trigger_id, batch_4))
 
@@ -357,11 +427,19 @@ class PipelineManager(threading.Thread):
             print(f"[Pipeline] ❌ Lỗi: {e}")
 
         finally:
+<<<<<<< HEAD
             self._cleanup(thread_camera, thread_body)
 
     # ----------------------------------------------------------------------- #
     def _result_loop(self):
         """Nhận kết quả AI → overlay lên frame → gửi show_queue."""
+=======
+            self._cleanup(thread_camera, thread_body, thread_sorting)
+
+    # ----------------------------------------------------------------------- #
+    def _result_loop(self):
+        """Nhận kết quả AI → overlay → gửi show_queue + sorting_queue."""
+>>>>>>> 5fe2763 (update 2703)
         print("[ResultReader] ▶ Bắt đầu …")
 
         while not self._stop_event.is_set():
@@ -380,12 +458,31 @@ class PipelineManager(threading.Thread):
                 self.result_queue.task_done()
                 continue
 
+<<<<<<< HEAD
             # results[cam_id] = dict | None  – thứ tự theo cam_id
+=======
+            # Tính is_ok cho toàn batch: tất cả cam đều OK mới là OK
+            batch_ok = all(r["is_ok"] for r in results if r is not None)
+
+            # Gửi kết quả batch vào sorting_queue để SortingActuator xử lý
+            try:
+                self.sorting_queue.put_nowait(batch_ok)
+            except queue.Full:
+                print("[ResultReader] ⚠️  sorting_queue full – drop kết quả cũ nhất")
+                try:
+                    self.sorting_queue.get_nowait()
+                except queue.Empty:
+                    pass
+                self.sorting_queue.put_nowait(batch_ok)
+
+            # Overlay từng cam + gửi show_queue
+>>>>>>> 5fe2763 (update 2703)
             for cam_id, r in enumerate(results):
                 if r is None:
                     continue
 
                 cam_key = str(cam_id + 1)
+<<<<<<< HEAD
                 label   = "✅ OK" if r["is_ok"] else "❌ NG"
                 print(
                     f"[ResultReader] trigger={trigger_id} cam={cam_key} | "
@@ -397,6 +494,26 @@ class PipelineManager(threading.Thread):
                 if frame is not None:
                     overlay = self._draw_result(frame, r)
                     self._put_drop(self.show_queue.get(cam_key), overlay)
+=======
+                is_ok   = r["is_ok"]
+                label   = "✅ OK" if is_ok else "❌ NG"
+                boxes   = r["anomaly_info"]["boxes"]
+                print(
+                    f"[ResultReader] trigger={trigger_id} cam={cam_key} | "
+                    f"{label} | score={r['score']:.4f} | "
+                    f"boxes={len(boxes)} | {r['time_ms']:.1f}ms"
+                )
+
+                frame_bgr = self._last_frames.get(cam_key)
+                if frame_bgr is not None:
+                    overlay = self._draw_result(frame_bgr, r)
+                    self._put_drop(self.show_queue.get(cam_key), (overlay, is_ok))
+
+            print(
+                f"[ResultReader] trigger={trigger_id} "
+                f"BATCH → {'✅ OK' if batch_ok else '❌ NG'}"
+            )
+>>>>>>> 5fe2763 (update 2703)
 
             self.result_queue.task_done()
 
@@ -404,6 +521,7 @@ class PipelineManager(threading.Thread):
 
     # ----------------------------------------------------------------------- #
     @staticmethod
+<<<<<<< HEAD
     def _draw_result(frame: np.ndarray, result: dict) -> np.ndarray:
         """
         Vẽ kết quả OK/NG lên frame.
@@ -430,6 +548,38 @@ class PipelineManager(threading.Thread):
 
         # Text score nhỏ hơn
         cv2.putText(img, f"score: {score:.3f}",
+=======
+    def _draw_result(frame_bgr: np.ndarray, result: dict) -> np.ndarray:
+        """
+        Vẽ heatmap anomaly + bounding boxes + label OK/NG lên frame BGR.
+        Trả về frame mới (không sửa in-place).
+        """
+        # 1. Overlay heatmap + bounding boxes (chỉ khi NG)
+        if not result["is_ok"] and result.get("anomaly_info"):
+            img = draw_anomaly_overlay(
+                frame_bgr    = frame_bgr,
+                anomaly_info = result["anomaly_info"],
+                alpha        = 0.4,
+            )
+        else:
+            img = frame_bgr.copy()
+
+        # 2. Label OK / NG + score góc trên-trái
+        is_ok  = result["is_ok"]
+        label  = "OK" if is_ok else "NG"
+        color  = (0, 255, 0) if is_ok else (0, 0, 255)
+        h, w   = img.shape[:2]
+        margin = 20
+
+        bg = img.copy()
+        cv2.rectangle(bg, (0, 0), (w // 3, 90), (0, 0, 0), -1)
+        cv2.addWeighted(bg, 0.45, img, 0.55, 0, img)
+
+        cv2.putText(img, label,
+                    (margin, 60),
+                    cv2.FONT_HERSHEY_SIMPLEX, 2.0, color, 4, cv2.LINE_AA)
+        cv2.putText(img, f"score: {result['score']:.3f}",
+>>>>>>> 5fe2763 (update 2703)
                     (margin, 85),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (220, 220, 220), 1, cv2.LINE_AA)
 
@@ -438,7 +588,14 @@ class PipelineManager(threading.Thread):
     # ----------------------------------------------------------------------- #
     @staticmethod
     def _put_drop(q, item):
+<<<<<<< HEAD
         """Đặt item vào queue; nếu full thì drop cũ rồi đặt mới."""
+=======
+        """
+        Đặt item vào queue; nếu full thì drop cũ rồi đặt mới.
+        item = (frame_bgr, is_ok)  – is_ok: True | False | None
+        """
+>>>>>>> 5fe2763 (update 2703)
         if q is None:
             return
         try:
@@ -454,7 +611,11 @@ class PipelineManager(threading.Thread):
                 pass
 
     # ----------------------------------------------------------------------- #
+<<<<<<< HEAD
     def _cleanup(self, thread_camera, thread_body):
+=======
+    def _cleanup(self, thread_camera, thread_body, thread_sorting=None):
+>>>>>>> 5fe2763 (update 2703)
         print("[Pipeline] Dọn dẹp …")
         self._stop_event.set()
 
@@ -471,6 +632,13 @@ class PipelineManager(threading.Thread):
             thread_body.join(timeout=5)
             print("[Pipeline] BodyWorker đã dừng.")
 
+<<<<<<< HEAD
+=======
+        if thread_sorting:
+            thread_sorting.join(timeout=3)
+            print("[Pipeline] SortingActuator đã dừng.")
+
+>>>>>>> 5fe2763 (update 2703)
         print("[Pipeline] Stopped")
 
     # ----------------------------------------------------------------------- #

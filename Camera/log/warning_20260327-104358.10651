@@ -1,0 +1,5 @@
+Log file created at: 2026/03/27 10:43:58
+Running on machine: via-desktop
+Log line format: [IWEF]mmdd hh:mm:ss.uuuuuu threadid file:line] msg
+W0327 10:43:58.789189 10689 CameraGigeBase.cpp:4664] Device:(name:EMVC-GECS507GC-POE sn:056030220609 cam:192.168.10.60-1000-1300 nic:enP7p1s0-192.168.10.100-1000M-1500)ReConnected, TolCount:1, Flag:1
+W0327 11:29:17.573215 10689 CameraGigeBase.cpp:4664] Device:(name:EMVC-GECS507GC-POE sn:056030220609 cam:192.168.10.60-1000-1300 nic:enP7p1s0-192.168.10.100-1000M-1500)ReConnected, TolCount:2, Flag:1
