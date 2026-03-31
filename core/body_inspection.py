@@ -8,6 +8,7 @@ from pathlib import Path
 from PIL import Image
 from concurrent.futures import ThreadPoolExecutor
 import cv2
+import json
 
 try:
     from torch2trt import torch2trt, TRTModule
@@ -15,7 +16,7 @@ try:
 except ImportError:
     HAS_TRT = False
 
-U2NET_ENGINE_PATH = "models/u2netp.trt"
+U2NET_ENGINE_PATH = "models/remove_bg/u2netp.trt"
 BANK_CACHE_PATH   = "memory_bank.pt"
 TRT_ENGINE_PATH   = "backbone_flex_224x224.pth"
 STD_W, STD_H      = 224, 224
@@ -362,6 +363,15 @@ def merge_patchcore_with_masks(patchcore_results: list,
 # =========================================================================== #
 #  LOAD HỆ THỐNG                                                               #
 # =========================================================================== #
+# def load_threshold_from_json(project_root: Path) -> float | None:
+#     """Đọc threshold từ project_info.json. Trả về None nếu chưa có."""
+#     json_path = project_root / PROJECT_INFO_FILENAME
+#     if not json_path.exists():
+#         return None
+#     with open(json_path, "r", encoding="utf-8") as f:
+#         info = json.load(f)
+#     return info.get("settings", {}).get("threshold", None)
+
 def load_system():
     model_engine = None
     bank         = None

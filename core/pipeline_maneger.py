@@ -194,7 +194,7 @@ class PipelineManager(threading.Thread):
         print("[ResultReader] 🛑 Kết thúc.")
 
     # ----------------------------------------------------------------------- #
-    @staticmethod
+    # @staticmethod
     # def _draw_result(frame_bgr: np.ndarray, result: dict) -> np.ndarray:
     #     """
     #     Vẽ heatmap anomaly + bounding boxes + label OK/NG lên frame BGR.

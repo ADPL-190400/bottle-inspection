@@ -9,10 +9,6 @@ from core.path_manager import BASE_DIR
 
 
 
-# "Standard Workspace": Mọi ảnh (2448x600, 2048x500...) đều đưa về chuẩn này để so sánh
-# STD_W, STD_H      = 224, 224 
-# TRT_ENGINE_PATH   = "/home/m2m/Documents/Bottle-inspection/Application/backbone_flex_224x224.pth"
-
 device = torch.device("cuda")
 dtype  = torch.float16
 
@@ -52,7 +48,7 @@ class FlexibleBackbone(nn.Module):
 # ─────────────────────────────────────────────
 def get_engine(STD_W, STD_H ):
     engine_name = f"backbone_{STD_W}x{STD_H}.pth"
-    TRT_ENGINE_PATH = os.path.join(BASE_DIR, engine_name)
+    TRT_ENGINE_PATH = os.path.join(BASE_DIR,"models/backbone",engine_name)
     if os.path.exists(TRT_ENGINE_PATH):
         print(f"🚀 Loading Flexible Engine ({STD_W}x{STD_H})...")
         model_trt = TRTModule()

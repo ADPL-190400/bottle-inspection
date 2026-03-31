@@ -7,20 +7,34 @@ import os
 import re
 import threading
 import cv2
+from pathlib import Path
 from hardware.camera.batch_camera import BatchCamera
 from training.patchcore_memory_bank import build_bank
 
 
+# Thư mục gốc chứa các project (điều chỉnh nếu cần)
+PROJECTS_ROOT = os.path.join(BASE_DIR, "projects")
+
+
 # =========================================================================== #
-#  BUILD WORKER (chạy build_bank trên QThread riêng)                          #
+#  BUILD WORKER                                                                #
 # =========================================================================== #
 class BuildBankWorker(QThread):
     finished = pyqtSignal(bool, str)   # (success, message)
 
+    def __init__(self, goods_dir: Path, output_dir: Path):
+        super().__init__()
+        self.goods_dir  = goods_dir
+        self.output_dir = output_dir
+
     def run(self):
         try:
-            build_bank()
-            self.finished.emit(True, "✅ Build Memory Bank hoàn tất.")
+            build_bank(self.goods_dir, self.output_dir)
+            self.finished.emit(
+                True,
+                f"✅ Build Memory Bank hoàn tất.\n"
+                f"   📁 {self.output_dir / 'memory_bank.pt'}"
+            )
         except Exception as e:
             self.finished.emit(False, f"❌ Build thất bại: {e}")
 
@@ -47,22 +61,76 @@ class GetDataTab(QtWidgets.QWidget):
         self._fs_model = QFileSystemModel()
         self._fs_model.setFilter(QDir.Filter.AllEntries | QDir.Filter.NoDotAndDotDot)
         self.treeView_img.setModel(self._fs_model)
-        # Chỉ hiện cột Name, ẩn Size / Type / Date
         self.treeView_img.setColumnHidden(1, True)
         self.treeView_img.setColumnHidden(2, True)
         self.treeView_img.setColumnHidden(3, True)
         self.treeView_img.setHeaderHidden(False)
 
+        # ── name_project ComboBox ─────────────────────────────────────────── #
+        self._populate_project_combo()
+        self.name_project.currentIndexChanged.connect(self._on_project_changed)
+        self._update_tree_from_combo()
+
+    # ----------------------------------------------------------------------- #
+    #  PROJECT HELPERS                                                         #
+    # ----------------------------------------------------------------------- #
+    def _get_projects_root(self) -> str:
+        return PROJECTS_ROOT
+
+    def _populate_project_combo(self):
+        self.name_project.blockSignals(True)
+        self.name_project.clear()
+        root = self._get_projects_root()
+        if os.path.isdir(root):
+            entries = sorted(
+                e for e in os.listdir(root)
+                if os.path.isdir(os.path.join(root, e))
+            )
+            self.name_project.addItems(entries)
+        else:
+            print(f"[GetData] ⚠ Thư mục project không tồn tại: {root}")
+        self.name_project.blockSignals(False)
+
+    def _on_project_changed(self, _index: int):
+        self._update_tree_from_combo()
+
+    def _update_tree_from_combo(self):
+        goods_path = self._get_goods_path()
+        if goods_path:
+            self._set_tree_root(str(goods_path))
+
+    def _get_project_root(self) -> Path | None:
+        """Trả về Path của project đang chọn."""
+        name = self.name_project.currentText().strip()
+        if not name:
+            return None
+        return Path(self._get_projects_root()) / name
+
+    def _get_goods_path(self) -> Path | None:
+        """<PROJECTS_ROOT>/<project>/goods — tạo nếu chưa có."""
+        project_root = self._get_project_root()
+        if project_root is None:
+            return None
+        goods = project_root / "goods"
+        goods.mkdir(parents=True, exist_ok=True)
+        return goods
+
+    def _get_memory_bank_dir(self) -> Path | None:
+        """<PROJECTS_ROOT>/<project>/memory_bank — tạo nếu chưa có."""
+        project_root = self._get_project_root()
+        if project_root is None:
+            return None
+        mb_dir = project_root / "memory_bank"
+        mb_dir.mkdir(parents=True, exist_ok=True)
+        return mb_dir
+
     # ----------------------------------------------------------------------- #
     def _set_tree_root(self, path: str):
-        """Trỏ treeView_img vào thư mục đã chọn."""
         root_index = self._fs_model.setRootPath(path)
         self.treeView_img.setRootIndex(root_index)
         self.treeView_img.expandAll()
 
-    # ----------------------------------------------------------------------- #
     def _set_data_buttons_enabled(self, enabled: bool):
-        """Enable/disable các nút liên quan đến thu thập dữ liệu."""
         self.btn_start_get_data.setEnabled(enabled)
         self.btn_stop_get_data.setEnabled(enabled)
         self.build_memory_bank.setEnabled(enabled)
@@ -70,7 +138,6 @@ class GetDataTab(QtWidgets.QWidget):
     # ----------------------------------------------------------------------- #
     def init_camera(self):
         if self.is_initialized:
-            print("[GetData] Camera đã khởi tạo rồi.")
             return
         try:
             self.data_manager = GetDataManager()
@@ -94,11 +161,12 @@ class GetDataTab(QtWidgets.QWidget):
             print("[GetData] Đang thu thập rồi.")
             return
 
-        save_dir = self._get_save_dir()
+        save_dir = self._get_goods_path() or self._get_save_dir_fallback()
         if not save_dir:
             return
 
-        self.data_manager.set_save_dir(save_dir)
+        self._set_tree_root(str(save_dir))
+        self.data_manager.set_save_dir(str(save_dir))
         self.data_manager.is_saving = True
         self.is_saving = True
         print(f"[GetData] ▶ Bắt đầu thu thập → {save_dir}")
@@ -112,22 +180,20 @@ class GetDataTab(QtWidgets.QWidget):
         print("[GetData] ⏹ Dừng thu thập.")
 
     # ----------------------------------------------------------------------- #
-    def _get_save_dir(self) -> str | None:
+    def _get_save_dir_fallback(self) -> Path | None:
         line_edit = getattr(self, "save_dir_input", None)
         if line_edit:
             path = line_edit.text().strip()
             if path:
-                os.makedirs(path, exist_ok=True)
-                self._set_tree_root(path)
-                return path
+                p = Path(path)
+                p.mkdir(parents=True, exist_ok=True)
+                return p
 
         path = QtWidgets.QFileDialog.getExistingDirectory(self, "Chọn thư mục lưu ảnh")
         if not path:
             print("[GetData] Chưa chọn thư mục.")
             return None
-
-        self._set_tree_root(path)
-        return path
+        return Path(path)
 
     # ----------------------------------------------------------------------- #
     def build_memory(self):
@@ -135,11 +201,21 @@ class GetDataTab(QtWidgets.QWidget):
             print("[GetData] Đang build rồi.")
             return
 
+        goods_dir = self._get_goods_path()
+        if goods_dir is None:
+            print("[GetData] ⚠ Chưa chọn project.")
+            return
+
+        output_dir = self._get_memory_bank_dir()
+        if output_dir is None:
+            print("[GetData] ⚠ Không xác định được thư mục memory_bank.")
+            return
+
         self.stop_get_data()
         self._set_data_buttons_enabled(False)
-        print("[GetData] 🔨 Bắt đầu build Memory Bank...")
+        print(f"[GetData] 🔨 Build Memory Bank: {goods_dir} → {output_dir}")
 
-        self._build_worker = BuildBankWorker()
+        self._build_worker = BuildBankWorker(goods_dir, output_dir)
         self._build_worker.finished.connect(self._on_build_finished)
         self._build_worker.start()
 
@@ -147,6 +223,15 @@ class GetDataTab(QtWidgets.QWidget):
     def _on_build_finished(self, success: bool, message: str):
         print(f"[GetData] {message}")
         self._set_data_buttons_enabled(True)
+
+    # ----------------------------------------------------------------------- #
+    def refresh_projects(self):
+        current = self.name_project.currentText()
+        self._populate_project_combo()
+        idx = self.name_project.findText(current)
+        if idx >= 0:
+            self.name_project.setCurrentIndex(idx)
+        self._update_tree_from_combo()
 
     # ----------------------------------------------------------------------- #
     def closeEvent(self, event):
@@ -163,19 +248,6 @@ class GetDataTab(QtWidgets.QWidget):
 #  GET DATA MANAGER                                                            #
 # =========================================================================== #
 class GetDataManager(threading.Thread):
-    """
-    Chạy BatchCamera, khi có trigger và is_saving=True thì lưu ảnh.
-
-    Cấu trúc thư mục (phẳng, không tạo subfolder):
-        save_dir/
-            cam1_0001.jpg  cam2_0001.jpg  ...
-            cam1_0002.jpg  cam2_0002.jpg  ...
-            ...
-
-    Khi start lại cùng thư mục, tự động đếm file hiện có
-    và ghi tiếp từ index tiếp theo — không ghi đè.
-    """
-
     def __init__(self):
         super().__init__(daemon=True, name="GetDataManager")
         self.frames_queue   = queue.Queue(maxsize=1)
@@ -184,24 +256,16 @@ class GetDataManager(threading.Thread):
         self.save_dir       = None
         self._trigger_count = 0
 
-    # ----------------------------------------------------------------------- #
     def set_save_dir(self, path: str):
-        """Đặt thư mục lưu và tự resume index từ file đã có."""
         self.save_dir = path
         self._trigger_count = self._scan_last_index(path)
         if self._trigger_count > 0:
-            print(f"[GetDataManager] 🔄 Resume từ trigger_{self._trigger_count:04d} "
-                  f"(đã có {self._trigger_count} trigger)")
+            print(f"[GetDataManager] 🔄 Resume từ trigger_{self._trigger_count:04d}")
         else:
             print("[GetDataManager] 🆕 Thư mục trống, bắt đầu từ 0001")
 
-    # ----------------------------------------------------------------------- #
     @staticmethod
     def _scan_last_index(directory: str) -> int:
-        """
-        Quét thư mục, tìm số trigger lớn nhất từ các file có dạng
-        cam{N}_{index}.jpg  →  trả về index lớn nhất (hoặc 0 nếu trống).
-        """
         if not os.path.isdir(directory):
             return 0
         pattern = re.compile(r"^cam\d+_(\d+)\.jpg$", re.IGNORECASE)
@@ -214,11 +278,9 @@ class GetDataManager(threading.Thread):
                     max_index = idx
         return max_index
 
-    # ----------------------------------------------------------------------- #
     def stop(self):
         self._stop_event.set()
 
-    # ----------------------------------------------------------------------- #
     def run(self):
         thread_camera = None
         try:
@@ -238,16 +300,13 @@ class GetDataManager(threading.Thread):
 
                 if self.is_saving and self.save_dir:
                     self._save_trigger(frames)
-
         finally:
             if thread_camera:
                 thread_camera.join(timeout=3)
             print("[GetDataManager] Stopped.")
 
-    # ----------------------------------------------------------------------- #
     def _save_trigger(self, frames: list):
         self._trigger_count += 1
-
         saved = 0
         for cam_id, frame in enumerate(frames):
             if frame is None:
@@ -256,5 +315,4 @@ class GetDataManager(threading.Thread):
             path = os.path.join(self.save_dir, filename)
             cv2.imwrite(path, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
             saved += 1
-
         print(f"[GetDataManager] 💾 trigger_{self._trigger_count:04d} → {saved} ảnh")
