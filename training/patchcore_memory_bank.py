@@ -297,7 +297,7 @@ def build_bank(goods_dir: Path,
                output_dir: Path | None = None,
                project_root: Path | None = None,
                train_ratio: float = 0.8,
-               safety_factor: float = 1.1,
+               safety_factor: float = 1,
                seed: int = 42):
     """
     Chia ảnh good theo tỉ lệ train/val, build Memory Bank từ phần train,

@@ -7,12 +7,12 @@ from hardware.camera import mvsdk
 from hardware.gpio.trigger_input_camera import TriggerCamera
 import queue
 import time
-from PIL import Image
+
 
 
 class BatchCamera(threading.Thread):
 
-    def __init__(self, output_queue, stop_event):
+    def __init__(self, output_queue, stop_event, infor_project):
         super().__init__()
 
         self.cameras    = []
@@ -21,6 +21,8 @@ class BatchCamera(threading.Thread):
 
         self.output_queue = output_queue
         self.stop_event   = stop_event
+        self.infor_project = infor_project
+        self.project_name = self.infor_project.get("project_name", None)
 
         self.init_cameras()
         self.init_trigger_camera()
@@ -42,8 +44,10 @@ class BatchCamera(threading.Thread):
             except mvsdk.CameraException as e:
                 print("CameraInit Failed:", e.message)
                 continue
-
-            config_path = os.path.join(BASE_DIR, "19.config")
+            
+            
+            config_path = os.path.join(BASE_DIR,"projects",self.project_name, "camera_config", "19.config")
+            print('config camera path',config_path)
             if os.path.exists(config_path):
                 print('config file camera', config_path)
                 mvsdk.CameraReadParameterFromFile(hCamera, config_path)

@@ -10,11 +10,12 @@ import cv2
 from pathlib import Path
 from hardware.camera.batch_camera import BatchCamera
 from training.patchcore_memory_bank import build_bank
+import json
 
 
-# Thư mục gốc chứa các project (điều chỉnh nếu cần)
+
 PROJECTS_ROOT = os.path.join(BASE_DIR, "projects")
-
+PROJECT_INFO_FILENAME = "project_info.json"
 
 # =========================================================================== #
 #  BUILD WORKER                                                                #
@@ -153,16 +154,18 @@ class GetDataTab(QtWidgets.QWidget):
             print("[GetData] Đang build Memory Bank, không thể thu thập.")
             return
 
-        self.init_camera()
-        if not self.is_initialized:
-            print("[GetData] Chưa init camera.")
-            return
+        
         if self.is_saving:
             print("[GetData] Đang thu thập rồi.")
             return
 
         save_dir = self._get_goods_path() or self._get_save_dir_fallback()
         if not save_dir:
+            return
+        
+        self.init_camera()
+        if not self.is_initialized:
+            print("[GetData] Chưa init camera.")
             return
 
         self._set_tree_root(str(save_dir))
@@ -264,6 +267,19 @@ class GetDataManager(threading.Thread):
         else:
             print("[GetDataManager] 🆕 Thư mục trống, bắt đầu từ 0001")
 
+    def load_project_json(self):
+        project_root = Path(self._get_project_root())
+        """Đọc từ project_info.json. Trả về None nếu chưa có."""
+        json_path = project_root / PROJECT_INFO_FILENAME
+
+        if not json_path.exists():
+            print(f"⚠️  Không tìm thấy {json_path}")
+            return None
+        with open(json_path, "r", encoding="utf-8") as f:
+            infor_project = json.load(f)   
+            return infor_project
+
+
     @staticmethod
     def _scan_last_index(directory: str) -> int:
         if not os.path.isdir(directory):
@@ -285,7 +301,8 @@ class GetDataManager(threading.Thread):
         thread_camera = None
         try:
             try:
-                thread_camera = BatchCamera(self.frames_queue, self._stop_event)
+                infor_project = self.load_project_json()
+                thread_camera = BatchCamera(self.frames_queue, self._stop_event, infor_project)
                 thread_camera.start()
                 print("[GetDataManager] Camera started.")
             except Exception as e:

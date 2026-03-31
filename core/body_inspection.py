@@ -137,8 +137,11 @@ def draw_anomaly_overlay(frame_bgr: np.ndarray, anomaly_info: dict,
     img = frame_bgr.copy()
     h, w = img.shape[:2]
 
+
     heatmap_color = cv2.applyColorMap(anomaly_info["heatmap_gray"], cv2.COLORMAP_JET)
     heatmap_color = cv2.resize(heatmap_color, (w, h))
+
+
 
     blended = cv2.addWeighted(heatmap_color, alpha, img, 1 - alpha, 0)
 
@@ -152,6 +155,7 @@ def draw_anomaly_overlay(frame_bgr: np.ndarray, anomaly_info: dict,
         cv2.rectangle(blended, (x1, y1), (x2, y2), (0, 0, 255), 2)
         cv2.putText(blended, "DEFECT", (x1, max(y1 - 6, 12)),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0, 0, 255), 2, cv2.LINE_AA)
+        
 
     return blended
 
@@ -186,6 +190,7 @@ def draw_object_mask(frame_bgr: np.ndarray, mask: np.ndarray) -> np.ndarray:
 
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     cv2.drawContours(img, contours, -1, (0, 220, 0), 2)
+
 
     return img
 
@@ -323,7 +328,7 @@ def merge_patchcore_with_masks(patchcore_results: list,
                 score_in_mask = float(scores_in_mask.max())
             else:
                 # Không có patch nào trong mask → coi như OK
-                score_in_mask = 0.0
+                score_in_mask = 100000
                 print(f"[Merge] cam{cam_id + 1} — mask quá nhỏ, không có patch → OK")
 
             is_ok = score_in_mask <= threshold

@@ -2,15 +2,18 @@ from PyQt6 import uic, QtWidgets
 from PyQt6.QtCore import Qt, pyqtSignal, QThread
 import queue
 import numpy as np
+from pathlib import Path
 from core.path_manager import BASE_DIR
 import os
 import time
-import cv2
+import json
 from utils.ultis import convert_cv_qt
 from core.pipeline_maneger import PipelineManager
 
 
 BATCH_COLLECTION_TIMEOUT = 1 / 30
+PROJECTS_ROOT = os.path.join(BASE_DIR, "projects")
+PROJECT_INFO_FILENAME = "project_info.json"
 
 
 class ProcessTab(QtWidgets.QWidget):
@@ -19,12 +22,19 @@ class ProcessTab(QtWidgets.QWidget):
         ui_path = os.path.join(BASE_DIR, "ui", "ui", "process_tab.ui")
         uic.loadUi(ui_path, self)
 
-        self.btn_play.clicked.connect(self.load_project_yaml)
+        self.btn_play.clicked.connect(self.load_project_json)
         self.btn_stop.clicked.connect(self.stop_all_threads)
 
         self.is_playing       = False
         self.pipeline_manager = None
         self.frame_updater    = None
+
+
+        # ── name_project ComboBox ─────────────────────────────────────────── #
+        self._populate_project_combo()
+        
+
+
 
         # show_queue nhận tuple (frame_bgr, is_ok)
         #   is_ok = None  → raw frame chưa có kết quả AI
@@ -35,11 +45,55 @@ class ProcessTab(QtWidgets.QWidget):
         }
 
     # ----------------------------------------------------------------------- #
-    def load_project_yaml(self):
+    #  PROJECT HELPERS                                                         #
+    # ----------------------------------------------------------------------- #
+    def _get_projects_root(self) -> str:
+        return PROJECTS_ROOT
+
+    def _populate_project_combo(self):
+        self.name_project.blockSignals(True)
+        self.name_project.clear()
+        root = self._get_projects_root()
+        if os.path.isdir(root):
+            entries = sorted(
+                e for e in os.listdir(root)
+                if os.path.isdir(os.path.join(root, e))
+            )
+            self.name_project.addItems(entries)
+        else:
+            print(f"[GetData] ⚠ Thư mục project không tồn tại: {root}")
+        self.name_project.blockSignals(False)
+
+    
+    def _get_project_root(self) -> Path | None:
+        """Trả về Path của project đang chọn."""
+        name = self.name_project.currentText().strip()
+        if not name:
+            return None
+        return Path(self._get_projects_root()) / name
+    
+    def load_project_json(self):
         if self.is_playing:
             print("Pipeline already running")
             return
         print("Load project yaml")
+
+        project_root = Path(self._get_project_root())
+        """Đọc từ project_info.json. Trả về None nếu chưa có."""
+        json_path = project_root / PROJECT_INFO_FILENAME
+
+        if not json_path.exists():
+            print(f"⚠️  Không tìm thấy {json_path}")
+            return None
+        with open(json_path, "r", encoding="utf-8") as f:
+            infor_project = json.load(f)
+        
+
+            
+
+        
+        
+        
         self.is_playing = True
 
         self.frame_updater = UpdateFrameThread(self.show_queue)
@@ -47,7 +101,7 @@ class ProcessTab(QtWidgets.QWidget):
         self.frame_updater.result_batch.connect(self.update_classification)
         self.frame_updater.start()
 
-        self.pipeline_manager = PipelineManager(self.show_queue)
+        self.pipeline_manager = PipelineManager(self.show_queue,infor_project)
         self.pipeline_manager.start()
 
     # ----------------------------------------------------------------------- #

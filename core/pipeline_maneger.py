@@ -36,10 +36,11 @@ class PipelineManager(threading.Thread):
         is_ok = False → AI phán NG
     """
 
-    def __init__(self, show_queue, threshold: float = 18):
+    def __init__(self, show_queue, infor_project, threshold: float = 18):
         super().__init__(daemon=True, name="PipelineManager")
         self.show_queue  = show_queue   # dict[str, queue.Queue] – key "1".."5"
-        self.threshold   = threshold
+        self.infor_project = infor_project
+        self.threshold   = self.infor_project.get("settings", {}).get("threshold", threshold)
         self.running     = True
 
         self.frames_queue  = queue.Queue(maxsize=1)
@@ -60,7 +61,7 @@ class PipelineManager(threading.Thread):
         try:
             # ── BatchCamera ─────────────────────────────────────────────────
             try:
-                thread_camera = BatchCamera(self.frames_queue, self._stop_event)
+                thread_camera = BatchCamera(self.frames_queue, self._stop_event, self.infor_project)
                 thread_camera.start()
                 print("[Pipeline] BatchCamera started.")
             except Exception as e:
