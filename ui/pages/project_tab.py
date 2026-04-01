@@ -92,6 +92,7 @@ class ProjectTab(QtWidgets.QWidget):
         sub_dirs = [
             "camera_config",
             "goods",
+            "template_level",
             "memory_bank",
         ]
 
@@ -113,7 +114,9 @@ class ProjectTab(QtWidgets.QWidget):
             "settings": {
                 "goods_dir": "goods",
                 "memory_bank_dir": "memory_bank",
-                "camera_config_dir": "camera_config"
+                "camera_config_dir": "camera_config",
+                "threshold": None,
+                "ratio_liquid": None,
             }
         }
 
