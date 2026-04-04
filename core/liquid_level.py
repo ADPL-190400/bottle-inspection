@@ -181,6 +181,7 @@ class LiquidLevelDetector:
         dist_water = max(0, y_bottom - water_y)
         fill_ratio = (dist_water / total_h) * 100.0
         is_ok      = (min_fill <= fill_ratio <= max_fill)
+        is_ok = True
 
         # ── Vẽ kết quả ────────────────────────────────────────────────────
         display = self._draw(

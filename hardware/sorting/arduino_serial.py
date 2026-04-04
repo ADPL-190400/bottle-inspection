@@ -21,6 +21,7 @@ class ArduinoSerial:
             return
         with self._lock:
             self.ser.write(str(value).encode())
+            self.ser.flush()
 
     def close(self):
         if self.ser and self.ser.is_open:

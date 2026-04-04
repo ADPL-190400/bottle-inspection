@@ -42,6 +42,7 @@ class SortingActuator(threading.Thread):
 
         # ── Arduino ──────────────────────────────────────────────────────── #
         self.arduino = ArduinoSerial(port=arduino_port, baud=arduino_baud)
+        self.arduino.send(0)
 
     # ----------------------------------------------------------------------- #
     def run(self):

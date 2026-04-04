@@ -37,20 +37,21 @@ class BatchCamera(threading.Thread):
         if len(DevList) < 1:
             print("No camera found")
             return
-
+        
         for DevInfo in DevList:
             try:
                 hCamera = mvsdk.CameraInit(DevInfo, -1, -1)
             except mvsdk.CameraException as e:
                 print("CameraInit Failed:", e.message)
                 continue
-            
-            
-            config_path = os.path.join(BASE_DIR,"projects",self.project_name, "camera_config", "19.config")
+            link_name = DevInfo.acSn.decode() if isinstance(DevInfo.acSn, bytes) else DevInfo.acSn
+            print('link name',link_name)
+            file_conf = f"{link_name}.config"
+            config_path = os.path.join(BASE_DIR,"projects",self.project_name, "camera_config", file_conf)
             print('config camera path',config_path)
             if os.path.exists(config_path):
                 print('config file camera', config_path)
-                mvsdk.CameraReadParameterFromFile(hCamera, config_path)
+                mvsdk.CameraReadParameterFromFile(hCamera, config_path)     
 
             cap  = mvsdk.CameraGetCapability(hCamera)
             mono = (cap.sIspCapacity.bMonoSensor != 0)

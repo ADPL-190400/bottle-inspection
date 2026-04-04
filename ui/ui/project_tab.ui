@@ -355,7 +355,17 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QSpinBox" name="spinBox"/>
+                      <widget class="QSpinBox" name="width_img">
+                       <property name="minimum">
+                        <number>16</number>
+                       </property>
+                       <property name="maximum">
+                        <number>2448</number>
+                       </property>
+                       <property name="value">
+                        <number>2448</number>
+                       </property>
+                      </widget>
                      </item>
                     </layout>
                    </item>
@@ -369,7 +379,17 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QSpinBox" name="spinBox_2"/>
+                      <widget class="QSpinBox" name="height_img">
+                       <property name="minimum">
+                        <number>4</number>
+                       </property>
+                       <property name="maximum">
+                        <number>2048</number>
+                       </property>
+                       <property name="value">
+                        <number>2048</number>
+                       </property>
+                      </widget>
                      </item>
                     </layout>
                    </item>
@@ -383,7 +403,11 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QSpinBox" name="spinBox_3"/>
+                      <widget class="QSpinBox" name="offset_x">
+                       <property name="maximum">
+                        <number>2000</number>
+                       </property>
+                      </widget>
                      </item>
                     </layout>
                    </item>
@@ -397,7 +421,11 @@
                       </widget>
                      </item>
                      <item>
-                      <widget class="QSpinBox" name="spinBox_4"/>
+                      <widget class="QSpinBox" name="offset_y">
+                       <property name="maximum">
+                        <number>2000</number>
+                       </property>
+                      </widget>
                      </item>
                     </layout>
                    </item>
