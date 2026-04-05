@@ -265,6 +265,11 @@ def _run_liquid_thread(imgs_bgr: list, masks: list,
     """
     Thread target cho liquid check.
     Dùng masks có sẵn từ U2Net — KHÔNG inference thêm.
+
+    Đọc từ liquid_config.json:
+        enabled  : bool       — bật/tắt toàn bộ liquid check
+        cam_ids  : list[int]  — 0-indexed, chỉ check các cam này
+
     holder[0] = list[dict|None]
     """
     liquid_results = [None] * len(imgs_bgr)
@@ -274,7 +279,22 @@ def _run_liquid_thread(imgs_bgr: list, masks: list,
         if not detector.is_ready():
             return   # chưa setup → giữ None
 
+        config, _ = detector.load()
+
+        # ── Kiểm tra bật/tắt ─────────────────────────────────────────
+        if not config.get("enabled", True):
+            print("[LiquidThread] ℹ️  Liquid check đang tắt — bỏ qua")
+            return
+
+        # ── Danh sách cam cần check (0-indexed) ──────────────────────
+        # Nếu không có cam_ids trong config → check tất cả (backward compat)
+        cam_ids_to_check = config.get("cam_ids", list(range(len(imgs_bgr))))
+
+        print(f"[LiquidThread] Check liquid cam: {[c+1 for c in cam_ids_to_check]}")
+
         for cam_id, (img_bgr, mask) in enumerate(zip(imgs_bgr, masks)):
+            if cam_id not in cam_ids_to_check:
+                continue   # ← skip cam không cần check → tiết kiệm ~200ms/cam
             if img_bgr is None:
                 continue
             try:
@@ -295,17 +315,45 @@ def _run_liquid_thread(imgs_bgr: list, masks: list,
 
 
 def combine_liquid(merged_results: list, liquid_results: list) -> list:
-    """Gắn liquid_result + AND is_ok body & liquid."""
+    """
+    Gắn liquid_result vào từng cam result.
+
+    Logic liquid: ÍT NHẤT 1 cam liquid OK → coi như liquid OK cho cả batch.
+    Kết quả cuối mỗi cam = body_ok AND liquid_batch_ok.
+    """
+    # ── Tính liquid_batch_ok: ít nhất 1 cam có liquid OK ────────────────
+    liquid_batch_ok = any(
+        liq["is_ok"]
+        for liq in liquid_results
+        if liq is not None
+    )
+    has_any_liquid = any(liq is not None for liq in liquid_results)
+
+    if has_any_liquid:
+        label = "✅ OK" if liquid_batch_ok else "❌ NG"
+        ok_cams = [i+1 for i, liq in enumerate(liquid_results)
+                   if liq is not None and liq["is_ok"]]
+        print(f"[Combine] Liquid batch: {label}  "
+              f"(cam OK: {ok_cams if ok_cams else 'none'})")
+
+    # ── Gắn vào từng cam result ──────────────────────────────────────────
     for cam_id, (r, liq) in enumerate(zip(merged_results, liquid_results)):
         if r is None:
             continue
-        r["liquid_result"] = liq
-        if liq is not None:
-            ok           = r["is_ok"] and liq["is_ok"]
-            r["is_ok"]   = ok
-            r["result"]  = "OK (ĐẠT)" if ok else "NG (LỖI)"
-            print(f"[Combine] cam{cam_id+1} body={'OK' if r['is_ok'] else 'NG'} "
-                  f"liquid={'OK' if liq['is_ok'] else 'NG'} → {r['result']}")
+        r["liquid_result"]       = liq
+        r["liquid_batch_ok"]     = liquid_batch_ok if has_any_liquid else None
+
+        if has_any_liquid:
+            combined_ok  = r["is_ok"] and liquid_batch_ok
+            r["is_ok"]   = combined_ok
+            r["result"]  = "OK (ĐẠT)" if combined_ok else "NG (LỖI)"
+            liq_str      = f"fill={liq['fill_ratio']:.1f}%" if liq else "N/A"
+            print(f"[Combine] cam{cam_id+1} "
+                  f"body={'OK' if r['is_ok'] else 'NG'} "
+                  f"liquid_cam={liq_str} "
+                  f"liquid_batch={'OK' if liquid_batch_ok else 'NG'} "
+                  f"→ {r['result']}")
+
     return merged_results
 
 
