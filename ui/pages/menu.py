@@ -56,20 +56,6 @@ class MenuWindow(QMainWindow):
 
     
 
-    # def close_tab(self, index):
-    #     if index == 0:
-    #         return
-
-    #     widget = self.tab_menu.widget(index)
-
-    #     # dừng thread trước
-    #     if hasattr(widget, "stop_all_threads"):
-    #         widget.stop_all_threads()
-
-
-    #     self.tab_menu.removeTab(index)
-    #     widget.deleteLater()
-
     def close_tab(self, index):
         if index == 0:
             return
