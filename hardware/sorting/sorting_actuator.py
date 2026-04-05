@@ -75,3 +75,7 @@ class SortingActuator(threading.Thread):
         print("[SortingActuator] 🛑 Kết thúc.")
         self._trigger_stop.set()
         self.arduino.close()     # ← đóng Serial khi dừng
+
+
+
+
