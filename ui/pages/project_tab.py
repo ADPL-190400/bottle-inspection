@@ -161,16 +161,6 @@ class ProjectTab(QtWidgets.QWidget):
 
         project_name = self.text_name_project.text().strip()
 
-        if not project_name:
-            QMessageBox.warning(self, "Cảnh báo", "Vui lòng nhập tên project!")
-            self.text_name_project.setFocus()
-            return
-
-        invalid_chars = r'\/:*?"<>|'
-        if any(ch in project_name for ch in invalid_chars):
-            QMessageBox.warning(self, "Cảnh báo",
-                                f"Tên project không được chứa các ký tự: {invalid_chars}")
-            return
 
         if self._hCamera is None or self._current_dev_info is None:
             QMessageBox.warning(self, "Cảnh báo", "Chưa có camera nào được mở!")
@@ -199,6 +189,13 @@ class ProjectTab(QtWidgets.QWidget):
             )
 
 
+        # Doc cau hinh camera tu file (neu co) sau khi mo camera thanh cong
+        img_size = mvsdk.CameraGetImageResolution(self._hCamera)
+        self.width_img.setValue(img_size.iWidth)
+        self.height_img.setValue(img_size.iHeight)
+        self.offset_x.setValue(img_size.iHOffsetFOV)
+        self.offset_y.setValue(img_size.iVOffsetFOV)
+
         cap = mvsdk.CameraGetCapability(self._hCamera)
         self._mono_camera = (cap.sIspCapacity.bMonoSensor != 0)
 
@@ -209,14 +206,14 @@ class ProjectTab(QtWidgets.QWidget):
 
         mvsdk.CameraSetTriggerMode(self._hCamera, 1)
 
-        img_size = mvsdk.CameraGetImageResolution(self._hCamera)
-        img_size.iHOffsetFOV = 0
-        img_size.iVOffsetFOV = 0
-        img_size.iWidthFOV   = cap.sResolutionRange.iWidthMax
-        img_size.iHeightFOV  = cap.sResolutionRange.iHeightMax
-        img_size.iWidth      = cap.sResolutionRange.iWidthMax
-        img_size.iHeight     = cap.sResolutionRange.iHeightMax
-        mvsdk.CameraSetImageResolution(self._hCamera, img_size)
+        # img_size = mvsdk.CameraGetImageResolution(self._hCamera)
+        # img_size.iHOffsetFOV = 0
+        # img_size.iVOffsetFOV = 0
+        # img_size.iWidthFOV   = cap.sResolutionRange.iWidthMax
+        # img_size.iHeightFOV  = cap.sResolutionRange.iHeightMax
+        # img_size.iWidth      = cap.sResolutionRange.iWidthMax
+        # img_size.iHeight     = cap.sResolutionRange.iHeightMax
+        # mvsdk.CameraSetImageResolution(self._hCamera, img_size)
 
         mvsdk.CameraPlay(self._hCamera)
 
