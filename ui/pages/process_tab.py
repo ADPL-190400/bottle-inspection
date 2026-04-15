@@ -29,12 +29,15 @@ class ProcessTab(QtWidgets.QWidget):
         self.pipeline_manager = None
         self.frame_updater    = None
 
+        # ── Inspection counters ───────────────────────────────────────────── #
+        self._inspected_count = 0
+        self._rejected_count  = 0
+        self._reset_counters()
 
         # ── name_project ComboBox ─────────────────────────────────────────── #
         self._populate_project_combo()
-        
-
-
+        # Reset counters khi đổi project
+        self.name_project.currentIndexChanged.connect(self._reset_counters)
 
         # show_queue nhận tuple (frame_bgr, is_ok)
         #   is_ok = None  → raw frame chưa có kết quả AI
@@ -43,6 +46,33 @@ class ProcessTab(QtWidgets.QWidget):
         self.show_queue = {
             str(cam_id): queue.Queue(maxsize=1) for cam_id in range(1, 6)
         }
+
+    # ----------------------------------------------------------------------- #
+    #  COUNTER HELPERS                                                         #
+    # ----------------------------------------------------------------------- #
+    def _reset_counters(self):
+        """Reset về 0 và cập nhật tất cả 3 label."""
+        self._inspected_count = 0
+        self._rejected_count  = 0
+        self._update_counter_labels()
+
+    def _update_counter_labels(self):
+        """Ghi số liệu lên 3 QLabel trên UI."""
+        # Số sản phẩm đã kiểm tra
+        if hasattr(self, "inspectedCountLabel"):
+            self.inspectedCountLabel.setText(str(self._inspected_count))
+
+        # Số sản phẩm lỗi
+        if hasattr(self, "rejectedCountLabel"):
+            self.rejectedCountLabel.setText(str(self._rejected_count))
+
+        # Tỷ lệ lỗi (%)
+        if hasattr(self, "defectRateLabel"):
+            if self._inspected_count > 0:
+                rate = self._rejected_count / self._inspected_count * 100
+                self.defectRateLabel.setText(f"{rate:.1f}%")
+            else:
+                self.defectRateLabel.setText("0.0%")
 
     # ----------------------------------------------------------------------- #
     #  PROJECT HELPERS                                                         #
@@ -64,14 +94,13 @@ class ProcessTab(QtWidgets.QWidget):
             print(f"[GetData] ⚠ Thư mục project không tồn tại: {root}")
         self.name_project.blockSignals(False)
 
-    
     def _get_project_root(self) -> Path | None:
         """Trả về Path của project đang chọn."""
         name = self.name_project.currentText().strip()
         if not name:
             return None
         return Path(self._get_projects_root()) / name
-    
+
     def load_project_json(self):
         if self.is_playing:
             print("Pipeline already running")
@@ -79,7 +108,6 @@ class ProcessTab(QtWidgets.QWidget):
         print("Load project yaml")
 
         project_root = Path(self._get_project_root())
-        """Đọc từ project_info.json. Trả về None nếu chưa có."""
         json_path = project_root / PROJECT_INFO_FILENAME
 
         if not json_path.exists():
@@ -87,13 +115,10 @@ class ProcessTab(QtWidgets.QWidget):
             return None
         with open(json_path, "r", encoding="utf-8") as f:
             infor_project = json.load(f)
-        
 
-            
+        # Reset counters mỗi lần bắt đầu chạy mới
+        self._reset_counters()
 
-        
-        
-        
         self.is_playing = True
 
         self.frame_updater = UpdateFrameThread(self.show_queue)
@@ -101,7 +126,7 @@ class ProcessTab(QtWidgets.QWidget):
         self.frame_updater.result_batch.connect(self.update_classification)
         self.frame_updater.start()
 
-        self.pipeline_manager = PipelineManager(self.show_queue,infor_project)
+        self.pipeline_manager = PipelineManager(self.show_queue, infor_project)
         self.pipeline_manager.start()
 
     # ----------------------------------------------------------------------- #
@@ -152,7 +177,14 @@ class ProcessTab(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------- #
     def update_classification(self, is_ok: bool):
-        """Cập nhật kết quả phân loại batch lên UI."""
+        """Cập nhật kết quả phân loại batch lên UI và đếm số liệu."""
+        # Tăng bộ đếm
+        self._inspected_count += 1
+        if not is_ok:
+            self._rejected_count += 1
+        self._update_counter_labels()
+
+        # Hiển thị kết quả OK / NG
         label = "OK" if is_ok else "NG"
         color = "green" if is_ok else "red"
         self.text_result.setText(label)
