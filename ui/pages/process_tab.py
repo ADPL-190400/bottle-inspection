@@ -8,7 +8,7 @@ import os
 import time
 import json
 from utils.ultis import convert_cv_qt
-from core.pipeline_maneger import PipelineManager
+from core.pipeline_manager import PipelineManager
 
 
 BATCH_COLLECTION_TIMEOUT = 1 / 30

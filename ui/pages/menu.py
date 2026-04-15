@@ -1,9 +1,9 @@
 from PyQt6 import uic
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QMainWindow
-# from ui.pages.process_tab import ProcessTab
+from ui.pages.process_tab import ProcessTab
 from ui.pages.project_tab import ProjectTab
-# from ui.pages.get_data_tab import GetDataTab
+from ui.pages.get_data_tab import GetDataTab
 from core.path_manager import BASE_DIR
 import os
 
