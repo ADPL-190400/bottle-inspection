@@ -1,5 +1,5 @@
 from PyQt6 import uic, QtWidgets
-from PyQt6.QtCore import Qt, pyqtSignal, QThread
+from PyQt6.QtCore import Qt, pyqtSignal, QThread, QMetaObject, Q_ARG
 import queue
 import numpy as np
 from pathlib import Path
@@ -17,6 +17,9 @@ PROJECT_INFO_FILENAME = "project_info.json"
 
 
 class ProcessTab(QtWidgets.QWidget):
+    # Signal thread-safe để nhận callback từ pipeline (thread khác)
+    _batch_result_signal = pyqtSignal(bool)
+
     def __init__(self):
         super().__init__()
         ui_path = os.path.join(BASE_DIR, "ui", "ui", "process_tab.ui")
@@ -34,15 +37,13 @@ class ProcessTab(QtWidgets.QWidget):
         self._rejected_count  = 0
         self._reset_counters()
 
+        # Kết nối signal (từ pipeline thread) → slot (GUI thread)
+        self._batch_result_signal.connect(self.update_classification)
+
         # ── name_project ComboBox ─────────────────────────────────────────── #
         self._populate_project_combo()
-        # Reset counters khi đổi project
         self.name_project.currentIndexChanged.connect(self._reset_counters)
 
-        # show_queue nhận tuple (frame_bgr, is_ok)
-        #   is_ok = None  → raw frame chưa có kết quả AI
-        #   is_ok = True  → cam này OK
-        #   is_ok = False → cam này NG
         self.show_queue = {
             str(cam_id): queue.Queue(maxsize=1) for cam_id in range(1, 6)
         }
@@ -51,22 +52,15 @@ class ProcessTab(QtWidgets.QWidget):
     #  COUNTER HELPERS                                                         #
     # ----------------------------------------------------------------------- #
     def _reset_counters(self):
-        """Reset về 0 và cập nhật tất cả 3 label."""
         self._inspected_count = 0
         self._rejected_count  = 0
         self._update_counter_labels()
 
     def _update_counter_labels(self):
-        """Ghi số liệu lên 3 QLabel trên UI."""
-        # Số sản phẩm đã kiểm tra
         if hasattr(self, "inspectedCountLabel"):
             self.inspectedCountLabel.setText(str(self._inspected_count))
-
-        # Số sản phẩm lỗi
         if hasattr(self, "rejectedCountLabel"):
             self.rejectedCountLabel.setText(str(self._rejected_count))
-
-        # Tỷ lệ lỗi (%)
         if hasattr(self, "defectRateLabel"):
             if self._inspected_count > 0:
                 rate = self._rejected_count / self._inspected_count * 100
@@ -95,7 +89,6 @@ class ProcessTab(QtWidgets.QWidget):
         self.name_project.blockSignals(False)
 
     def _get_project_root(self) -> Path | None:
-        """Trả về Path của project đang chọn."""
         name = self.name_project.currentText().strip()
         if not name:
             return None
@@ -116,18 +109,25 @@ class ProcessTab(QtWidgets.QWidget):
         with open(json_path, "r", encoding="utf-8") as f:
             infor_project = json.load(f)
 
-        # Reset counters mỗi lần bắt đầu chạy mới
         self._reset_counters()
-
         self.is_playing = True
 
         self.frame_updater = UpdateFrameThread(self.show_queue)
         self.frame_updater.frame_ready.connect(self.update_frame)
-        self.frame_updater.result_batch.connect(self.update_classification)
         self.frame_updater.start()
 
-        self.pipeline_manager = PipelineManager(self.show_queue, infor_project)
+        # Truyền callback vào pipeline — gọi đúng 1 lần / trigger
+        self.pipeline_manager = PipelineManager(
+            show_queue            = self.show_queue,
+            infor_project         = infor_project,
+            batch_result_callback = self._on_batch_result,
+        )
         self.pipeline_manager.start()
+
+    # ----------------------------------------------------------------------- #
+    def _on_batch_result(self, batch_ok: bool):
+        """Được gọi từ pipeline thread → emit signal để chuyển sang GUI thread."""
+        self._batch_result_signal.emit(batch_ok)
 
     # ----------------------------------------------------------------------- #
     def stop_all_threads(self):
@@ -159,7 +159,6 @@ class ProcessTab(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------- #
     def update_frame(self, cam_id: str, frame: np.ndarray):
-        """Cập nhật frame lên QLabel."""
         cam_widget = getattr(self, f"cam_{cam_id}", None)
         if cam_widget is None:
             return
@@ -177,14 +176,15 @@ class ProcessTab(QtWidgets.QWidget):
 
     # ----------------------------------------------------------------------- #
     def update_classification(self, is_ok: bool):
-        """Cập nhật kết quả phân loại batch lên UI và đếm số liệu."""
-        # Tăng bộ đếm
+        """
+        Được gọi đúng 1 lần mỗi trigger_id từ pipeline
+        = 1 lần chụp = 1 sản phẩm.
+        """
         self._inspected_count += 1
         if not is_ok:
             self._rejected_count += 1
         self._update_counter_labels()
 
-        # Hiển thị kết quả OK / NG
         label = "OK" if is_ok else "NG"
         color = "green" if is_ok else "red"
         self.text_result.setText(label)
@@ -192,49 +192,26 @@ class ProcessTab(QtWidgets.QWidget):
 
 
 # =========================================================================== #
-#  UPDATE FRAME THREAD                                                         #
+#  UPDATE FRAME THREAD  (chỉ còn nhiệm vụ hiển thị frame, không đếm nữa)     #
 # =========================================================================== #
 class UpdateFrameThread(QThread):
-    frame_ready  = pyqtSignal(str, np.ndarray)   # (cam_id, frame_bgr)
-    result_batch = pyqtSignal(bool)              # True=OK, False=NG
+    frame_ready = pyqtSignal(str, np.ndarray)   # (cam_id, frame_bgr)
 
     def __init__(self, show_queue: dict):
         super().__init__()
         self.show_queue = show_queue
         self._running   = True
 
-        # Giữ is_ok mới nhất của từng cam (None = chưa có kết quả AI)
-        self._last_is_ok = {cam_id: None for cam_id in show_queue}
-
     def run(self):
         while self._running:
-            got_ai_result = False   # có cam nào nhận được kết quả AI trong vòng này không
-
             for cam_id, q in self.show_queue.items():
                 try:
-                    # ✅ Unpack đúng tuple (frame_bgr, is_ok) từ pipeline
-                    frame, is_ok = q.get_nowait()
+                    frame, _ = q.get_nowait()   # bỏ qua is_ok, pipeline lo rồi
                 except queue.Empty:
                     continue
                 except (TypeError, ValueError):
-                    # Phòng trường hợp queue cũ chỉ có frame (không có is_ok)
                     continue
-
-                # Emit frame lên UI
                 self.frame_ready.emit(cam_id, frame)
-
-                # Cập nhật is_ok mới nhất của cam này
-                if is_ok is not None:
-                    self._last_is_ok[cam_id] = is_ok
-                    got_ai_result = True
-
-            # Chỉ emit result_batch khi có kết quả AI mới
-            # và tất cả cam đã có kết quả (không còn None)
-            if got_ai_result:
-                known = [v for v in self._last_is_ok.values() if v is not None]
-                if known:
-                    batch_ok = all(known)
-                    self.result_batch.emit(batch_ok)
 
             time.sleep(BATCH_COLLECTION_TIMEOUT / 2)
 

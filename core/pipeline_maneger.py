@@ -24,12 +24,16 @@ class PipelineManager(threading.Thread):
                         └─ sorting_queue
     """
 
-    def __init__(self, show_queue,infor_project: dict, threshold: float = 18):
+    def __init__(self, show_queue, infor_project: dict, threshold: float = 18,
+                 batch_result_callback=None):
         super().__init__(daemon=True, name="PipelineManager")
         self.show_queue  = show_queue
         self.infor_project = infor_project
         self.threshold     = infor_project.get("settings", {}).get("threshold", threshold)
         self.running     = True
+
+        # Callback (batch_ok: bool) → gọi 1 lần mỗi trigger (= 1 sản phẩm)
+        self.batch_result_callback = batch_result_callback
 
         self.frames_queue  = queue.Queue(maxsize=1)
         self.body_in_queue = queue.Queue(maxsize=4)
@@ -43,7 +47,7 @@ class PipelineManager(threading.Thread):
         thread_camera = thread_body = thread_sorting = None
         try:
             try:
-                thread_camera = BatchCamera(self.frames_queue, self._stop_event,self.infor_project)
+                thread_camera = BatchCamera(self.frames_queue, self._stop_event, self.infor_project)
                 thread_camera.start()
                 print("[Pipeline] BatchCamera started.")
             except Exception as e:
@@ -120,6 +124,7 @@ class PipelineManager(threading.Thread):
 
             batch_ok = all(r["is_ok"] for r in results if r is not None)
 
+            # ── Sorting ───────────────────────────────────────────────────── #
             try:
                 self.sorting_queue.put_nowait(batch_ok)
             except queue.Full:
@@ -129,6 +134,7 @@ class PipelineManager(threading.Thread):
                     pass
                 self.sorting_queue.put_nowait(batch_ok)
 
+            # ── Cập nhật overlay lên từng cam ─────────────────────────────── #
             for cam_id, r in enumerate(results):
                 if r is None:
                     continue
@@ -150,6 +156,14 @@ class PipelineManager(threading.Thread):
 
             print(f"[ResultReader] trigger={trigger_id} "
                   f"BATCH → {'✅ OK' if batch_ok else '❌ NG'}")
+
+            # ── Callback 1 lần / trigger = 1 sản phẩm ────────────────────── #
+            if self.batch_result_callback is not None:
+                try:
+                    self.batch_result_callback(batch_ok)
+                except Exception as e:
+                    print(f"[ResultReader] ⚠️ callback error: {e}")
+
             self.result_queue.task_done()
 
         print("[ResultReader] 🛑 Kết thúc.")
@@ -187,7 +201,7 @@ class PipelineManager(threading.Thread):
                 detector     = LiquidLevelDetector(project_root)
                 img          = detector.draw_on_existing(img, liquid_result)
             except Exception:
-                pass   # liquid overlay lỗi → bỏ qua, không crash
+                pass
 
         # 4. Label + score + fill ratio — góc trên-trái
         is_ok  = result["is_ok"]
