@@ -6,100 +6,247 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>990</width>
-    <height>654</height>
+    <width>1141</width>
+    <height>827</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Bottle Inspection System</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+/* ── Global ── */
+QMainWindow, QWidget {
+    background-color: #F7F8FA;
+    font-family: &quot;Segoe UI&quot;, Arial, sans-serif;
+
+    color: #1A202C;
+}
+
+/* ── MenuBar ── */
+QMenuBar {
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #E2E8F0;
+    padding: 2px 8px;
+
+    color: #4A5568;
+}
+QMenuBar::item:selected {
+    background-color: #EBF4FF;
+    color: #2563EB;
+    border-radius: 4px;
+}
+QMenu {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    padding: 4px;
+}
+QMenu::item {
+    padding: 6px 20px;
+    border-radius: 4px;
+    color: #1A202C;
+}
+QMenu::item:selected {
+    background-color: #EBF4FF;
+    color: #2563EB;
+}
+
+/* ── TabWidget ── */
+QTabWidget::pane {
+    background-color: #F7F8FA;
+    border: none;
+    border-top: 2px solid #E2E8F0;
+}
+QTabBar::tab {
+    background-color: #FFFFFF;
+    color: #718096;
+    border: 1px solid #E2E8F0;
+    border-bottom: none;
+    padding: 10px 28px;
+
+    font-weight: bold;
+    min-width: 120px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    margin-right: 2px;
+}
+QTabBar::tab:selected {
+    background-color: #F7F8FA;
+    color: #2563EB;
+    border-top: 2px solid #2563EB;
+    border-bottom: none;
+}
+QTabBar::tab:hover:!selected {
+    background-color: #EBF4FF;
+    color: #2563EB;
+}
+
+/* ── Section labels ── */
+QLabel#label, QLabel#label_2, QLabel#label_3 {
+    color: #2D3748;
+
+    font-weight: bold;
+    letter-spacing: 1.5px;
+    padding-bottom: 2px;
+    border-bottom: 2px solid #E2E8F0;
+}
+
+/* ── Tile buttons: inspection (green) ── */
+QPushButton#btn_process_page {
+    background-color: #FFFFFF;
+    color: #1A202C;
+
+    font-weight: bold;
+    border: 1px solid #C6F6D5;
+    border-left: 4px solid #38A169;
+    border-radius: 8px;
+    padding: 12px 20px;
+    text-align: left;
+}
+QPushButton#btn_process_page:hover {
+    background-color: #F0FFF4;
+    border-color: #9AE6B4;
+    border-left-color: #38A169;
+}
+QPushButton#btn_process_page:pressed {
+    background-color: #C6F6D5;
+}
+
+/* ── Tile buttons: setup (blue) ── */
+QPushButton#btn_project_page, QPushButton#btn_get_data {
+    background-color: #FFFFFF;
+    color: #1A202C;
+
+    font-weight: bold;
+    border: 1px solid #BEE3F8;
+    border-left: 4px solid #2563EB;
+    border-radius: 8px;
+    padding: 12px 20px;
+    text-align: left;
+}
+QPushButton#btn_project_page:hover, QPushButton#btn_get_data:hover {
+    background-color: #EBF8FF;
+    border-color: #90CDF4;
+    border-left-color: #2563EB;
+}
+QPushButton#btn_project_page:pressed, QPushButton#btn_get_data:pressed {
+    background-color: #BEE3F8;
+}
+
+/* ── Tile buttons: logs (amber) ── */
+QPushButton#btn_project_log, QPushButton#btn_system_log {
+    background-color: #FFFFFF;
+    color: #1A202C;
+
+    font-weight: bold;
+    border: 1px solid #FEEBC8;
+    border-left: 4px solid #D97706;
+    border-radius: 8px;
+    padding: 12px 20px;
+    text-align: left;
+}
+QPushButton#btn_project_log:hover, QPushButton#btn_system_log:hover {
+    background-color: #FFFBEB;
+    border-color: #FBD38D;
+    border-left-color: #D97706;
+}
+QPushButton#btn_project_log:pressed, QPushButton#btn_system_log:pressed {
+    background-color: #FEEBC8;
+}
+
+/* ── StatusBar ── */
+QStatusBar {
+    background-color: #FFFFFF;
+    border-top: 1px solid #E2E8F0;
+    color: #718096;
+
+    padding: 2px 12px;
+}
+   </string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <property name="sizePolicy">
-    <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-     <horstretch>0</horstretch>
-     <verstretch>0</verstretch>
-    </sizepolicy>
-   </property>
-   <property name="maximumSize">
-    <size>
-     <width>16777215</width>
-     <height>16777215</height>
-    </size>
-   </property>
    <layout class="QHBoxLayout" name="horizontalLayout_4">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
     <item>
      <widget class="QTabWidget" name="tab_menu">
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="cursor">
-       <cursorShape>ArrowCursor</cursorShape>
+      <property name="font">
+       <font>
+        <family>Segoe UI,Arial,sans-serif</family>
+       </font>
       </property>
       <property name="currentIndex">
        <number>0</number>
       </property>
       <widget class="QWidget" name="Menu">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
        <attribute name="title">
         <string>Menu</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout">
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <property name="spacing">
+         <number>28</number>
+        </property>
+        <property name="leftMargin">
+         <number>36</number>
+        </property>
+        <property name="topMargin">
+         <number>32</number>
+        </property>
+        <property name="rightMargin">
+         <number>36</number>
+        </property>
+        <property name="bottomMargin">
+         <number>32</number>
+        </property>
         <item>
-         <layout class="QVBoxLayout" name="verticalLayout_2">
+         <layout class="QVBoxLayout" name="verticalLayout">
           <property name="spacing">
-           <number>24</number>
+           <number>10</number>
           </property>
           <item>
            <widget class="QLabel" name="label">
-            <property name="font">
-             <font>
-              <pointsize>20</pointsize>
-              <weight>75</weight>
-              <bold>true</bold>
-             </font>
-            </property>
             <property name="text">
-             <string>Processing</string>
+             <string>LIVE INSPECTION</string>
             </property>
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <layout class="QHBoxLayout" name="horizontalLayout">
             <property name="spacing">
              <number>12</number>
             </property>
             <item>
              <widget class="QPushButton" name="btn_process_page">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
               <property name="minimumSize">
                <size>
-                <width>120</width>
-                <height>120</height>
+                <width>220</width>
+                <height>90</height>
                </size>
               </property>
               <property name="font">
                <font>
+                <family>Segoe UI,Arial,sans-serif</family>
                 <pointsize>15</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
                </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
               </property>
               <property name="text">
                <string>Process</string>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>30</width>
-                <height>30</height>
-               </size>
               </property>
              </widget>
             </item>
@@ -110,8 +257,8 @@
               </property>
               <property name="sizeHint" stdset="0">
                <size>
-                <width>40</width>
-                <height>20</height>
+                <width>0</width>
+                <height>0</height>
                </size>
               </property>
              </spacer>
@@ -121,79 +268,166 @@
          </layout>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout">
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <property name="spacing">
+           <number>10</number>
+          </property>
           <item>
-           <widget class="QPushButton" name="btn_project_page">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-            <property name="minimumSize">
-             <size>
-              <width>120</width>
-              <height>120</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>15</pointsize>
-             </font>
-            </property>
+           <widget class="QLabel" name="label_2">
             <property name="text">
-             <string>Project</string>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>30</width>
-              <height>30</height>
-             </size>
+             <string>PROJECT / CAMERA SETUP</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="btn_get_data">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <property name="spacing">
+             <number>12</number>
             </property>
-            <property name="minimumSize">
-             <size>
-              <width>120</width>
-              <height>120</height>
-             </size>
-            </property>
-            <property name="font">
-             <font>
-              <pointsize>15</pointsize>
-             </font>
-            </property>
+            <item>
+             <widget class="QPushButton" name="btn_project_page">
+              <property name="minimumSize">
+               <size>
+                <width>220</width>
+                <height>90</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>15</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="text">
+               <string>Project</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_get_data">
+              <property name="minimumSize">
+               <size>
+                <width>220</width>
+                <height>90</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>15</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="text">
+               <string>Data Acquisition</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <property name="spacing">
+           <number>10</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="label_3">
             <property name="text">
-             <string>Get Data</string>
-            </property>
-            <property name="iconSize">
-             <size>
-              <width>30</width>
-              <height>30</height>
-             </size>
+             <string>LOGS</string>
             </property>
            </widget>
           </item>
           <item>
-           <spacer name="horizontalSpacer_2">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <property name="spacing">
+             <number>12</number>
             </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
+            <item>
+             <widget class="QPushButton" name="btn_project_log">
+              <property name="minimumSize">
+               <size>
+                <width>220</width>
+                <height>90</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>15</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="text">
+               <string>History Logs</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_system_log">
+              <property name="minimumSize">
+               <size>
+                <width>220</width>
+                <height>90</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>15</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="text">
+               <string>System Logs</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_3">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
           </item>
          </layout>
         </item>
@@ -204,8 +438,8 @@
           </property>
           <property name="sizeHint" stdset="0">
            <size>
-            <width>20</width>
-            <height>240</height>
+            <width>0</width>
+            <height>0</height>
            </size>
           </property>
          </spacer>
@@ -222,15 +456,12 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>990</width>
-     <height>21</height>
+     <width>1141</width>
+     <height>25</height>
     </rect>
    </property>
    <property name="layoutDirection">
     <enum>Qt::RightToLeft</enum>
-   </property>
-   <property name="defaultUp">
-    <bool>false</bool>
    </property>
    <widget class="QMenu" name="Account">
     <property name="title">

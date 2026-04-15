@@ -6,25 +6,231 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1050</width>
-    <height>788</height>
+    <width>1162</width>
+    <height>721</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Data Acquisition</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout_7">
+  <property name="styleSheet">
+   <string notr="true">
+/* ── Global ── */
+QWidget {
+    background-color: #F7F8FA;
+    font-family: &quot;Segoe UI&quot;, Arial, sans-serif;
+
+    color: #1A202C;
+}
+
+/* ── GroupBox ── */
+QGroupBox {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    margin-top: 16px;
+    padding: 12px 10px 10px 10px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top center;
+    padding: 0 10px;
+    color: #4A5568;
+
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* ── Labels ── */
+QLabel {
+    background-color: transparent;
+    color: #4A5568;
+
+}
+
+/* ── ComboBox ── */
+QComboBox {
+    background-color: #FFFFFF;
+    border: 1px solid #CBD5E0;
+    border-radius: 6px;
+    padding: 6px 12px;
+
+    min-height: 34px;
+}
+QComboBox:hover { border-color: #2563EB; }
+QComboBox QAbstractItemView {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    selection-background-color: #EBF4FF;
+    selection-color: #2563EB;
+    padding: 4px;
+}
+
+/* ── TreeView ── */
+QTreeView {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+
+    color: #1A202C;
+    outline: none;
+    alternate-background-color: #F7FAFC;
+}
+QTreeView::item {
+    padding: 5px 8px;
+}
+QTreeView::item:selected {
+    background-color: #EBF4FF;
+    color: #2563EB;
+}
+QTreeView::item:hover {
+    background-color: #F7FAFC;
+}
+QTreeView::branch:selected {
+    background-color: #EBF4FF;
+}
+QHeaderView::section {
+    background-color: #EDF2F7;
+    border: none;
+    border-right: 1px solid #E2E8F0;
+    border-bottom: 1px solid #E2E8F0;
+    padding: 6px 10px;
+
+    font-weight: bold;
+    color: #4A5568;
+}
+
+/* ── Image label ── */
+ClickableLabel, QLabel#img_show {
+    background-color: #1A202C;
+    border: 1px solid #2D3748;
+    border-radius: 6px;
+    color: #4A5568;
+
+}
+
+/* ── Buttons: Start (green) ── */
+QPushButton#btn_start_get_data {
+    background-color: #38A169;
+    color: #FFFFFF;
+
+    font-weight: bold;
+    border: none;
+    border-radius: 7px;
+    padding: 0 20px;
+    min-height: 44px;
+    min-width: 120px;
+    max-width: 120px;
+}
+QPushButton#btn_start_get_data:hover { background-color: #2F855A; }
+QPushButton#btn_start_get_data:pressed { background-color: #276749; }
+
+/* ── Buttons: Stop (red outline) ── */
+QPushButton#btn_stop_get_data {
+    background-color: #FFFFFF;
+    color: #E53E3E;
+
+    font-weight: bold;
+    border: 2px solid #FC8181;
+    border-radius: 7px;
+    padding: 0 20px;
+    min-height: 44px;
+    min-width: 120px;
+    max-width: 120px;
+}
+QPushButton#btn_stop_get_data:hover {
+    background-color: #FFF5F5;
+    border-color: #E53E3E;
+}
+QPushButton#btn_stop_get_data:pressed { background-color: #FED7D7; }
+
+/* ── Buttons: Select (amber) ── */
+QPushButton#btn_select_template {
+    background-color: #D97706;
+    color: #FFFFFF;
+
+    font-weight: bold;
+    border: none;
+    border-radius: 7px;
+    padding: 0 20px;
+    min-height: 44px;
+    min-width: 120px;
+    max-width: 120px;
+}
+QPushButton#btn_select_template:hover { background-color: #B45309; }
+QPushButton#btn_select_template:pressed { background-color: #92400E; }
+
+/* ── Buttons: Cancel (red outline) ── */
+QPushButton#btn_cancle_select {
+    background-color: #FFFFFF;
+    color: #E53E3E;
+
+    font-weight: bold;
+    border: 2px solid #FC8181;
+    border-radius: 7px;
+    padding: 0 20px;
+    min-height: 44px;
+    min-width: 120px;
+    max-width: 120px;
+}
+QPushButton#btn_cancle_select:hover {
+    background-color: #FFF5F5;
+    border-color: #E53E3E;
+}
+QPushButton#btn_cancle_select:pressed { background-color: #FED7D7; }
+
+/* ── Buttons: Blue (Setup liquid, Export) ── */
+QPushButton#btn_setup_liquid, QPushButton#build_memory_bank {
+    background-color: #2563EB;
+    color: #FFFFFF;
+
+    font-weight: bold;
+    border: none;
+    border-radius: 7px;
+    padding: 0 20px;
+    min-height: 44px;
+    min-width: 120px;
+    max-width: 180px;
+}
+QPushButton#btn_setup_liquid:hover, QPushButton#build_memory_bank:hover {
+    background-color: #1D4ED8;
+}
+QPushButton#btn_setup_liquid:pressed, QPushButton#build_memory_bank:pressed {
+    background-color: #1E40AF;
+}
+   </string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout_8">
    <item>
     <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="spacing">
+      <number>10</number>
+     </property>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
+       <property name="spacing">
+        <number>8</number>
+       </property>
        <item>
         <widget class="QLabel" name="label_4">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
+         <property name="minimumSize">
+          <size>
+           <width>100</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>150</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>Segoe UI,Arial,sans-serif</family>
+           <pointsize>12</pointsize>
+          </font>
          </property>
          <property name="text">
           <string>Name Project:</string>
@@ -33,11 +239,23 @@
        </item>
        <item>
         <widget class="QComboBox" name="name_project">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
+         <property name="minimumSize">
+          <size>
+           <width>250</width>
+           <height>48</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>250</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>Segoe UI,Arial,sans-serif</family>
+           <pointsize>12</pointsize>
+          </font>
          </property>
         </widget>
        </item>
@@ -51,6 +269,27 @@
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
+       <property name="minimumSize">
+        <size>
+         <width>300</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>400</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="font">
+        <font>
+         <family>Segoe UI,Arial,sans-serif</family>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="alternatingRowColors">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
     </layout>
@@ -63,11 +302,11 @@
        <height>300</height>
       </size>
      </property>
-     <property name="frameShape">
-      <enum>QFrame::Box</enum>
+     <property name="styleSheet">
+      <string notr="true">background-color: #EDF2F7;</string>
      </property>
      <property name="text">
-      <string/>
+      <string>Image Preview</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -78,147 +317,213 @@
     <layout class="QVBoxLayout" name="verticalLayout_4">
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_3">
+       <property name="spacing">
+        <number>30</number>
+       </property>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_3">
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_2">
-           <item>
-            <widget class="QPushButton" name="btn_start_get_data">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Start</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="btn_stop_get_data">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="text">
-              <string>Stop</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeType">
-            <enum>QSizePolicy::Fixed</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QVBoxLayout" name="verticalLayout_5">
-         <item>
-          <widget class="QGroupBox" name="groupBox">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="title">
-            <string>Select liquid level</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
+        <widget class="QGroupBox" name="groupBox_3">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="font">
+          <font>
+           <family>Segoe UI,Arial,sans-serif</family>
+           <pointsize>12</pointsize>
+          </font>
+         </property>
+         <property name="title">
+          <string>GET DATA</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <property name="spacing">
+           <number>10</number>
+          </property>
+          <item>
            <layout class="QHBoxLayout" name="horizontalLayout_4">
             <item>
-             <layout class="QVBoxLayout" name="verticalLayout_2">
-              <item>
-               <widget class="QPushButton" name="btn_select_template">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="layoutDirection">
-                 <enum>Qt::LeftToRight</enum>
-                </property>
-                <property name="text">
-                 <string>Select</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="btn_cancle_select">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>Cancel</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
+             <widget class="QPushButton" name="btn_start_get_data">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>15</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="text">
+               <string>Start</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>16</width>
+                <height>16</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_stop_get_data">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>15</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="text">
+               <string>Stop</string>
+              </property>
+             </widget>
             </item>
            </layout>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="btn_setup_liquid">
-           <property name="text">
-            <string>Setup liquid</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
+          </item>
+         </layout>
+        </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_6">
+        <widget class="QGroupBox" name="groupBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="font">
+          <font>
+           <family>Segoe UI,Arial,sans-serif</family>
+           <pointsize>12</pointsize>
+          </font>
+         </property>
+         <property name="title">
+          <string>SELECT LIQUID LEVEL</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <property name="spacing">
+           <number>10</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <property name="spacing">
+             <number>10</number>
+            </property>
+            <item>
+             <widget class="QPushButton" name="btn_select_template">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>15</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="text">
+               <string>Select</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btn_cancle_select">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>15</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="text">
+               <string>Cancel</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_5">
+            <item>
+             <widget class="QPushButton" name="btn_setup_liquid">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>15</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="text">
+               <string>Setup Liquid</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_7">
          <item>
-          <spacer name="horizontalSpacer_2">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeType">
-            <enum>QSizePolicy::Fixed</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
-          <widget class="QPushButton" name="build_memory_bank">
+          <widget class="QGroupBox" name="groupBox_5">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
              <horstretch>0</horstretch>
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
-           <property name="text">
-            <string>Export</string>
+           <property name="font">
+            <font>
+             <family>Segoe UI,Arial,sans-serif</family>
+             <pointsize>12</pointsize>
+            </font>
            </property>
+           <property name="title">
+            <string>BUILD MEMORY BANK</string>
+           </property>
+           <layout class="QHBoxLayout" name="horizontalLayout_6">
+            <item>
+             <widget class="QPushButton" name="build_memory_bank">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>15</pointsize>
+                <weight>75</weight>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="cursor">
+               <cursorShape>PointingHandCursor</cursorShape>
+              </property>
+              <property name="text">
+               <string>Export</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </widget>
          </item>
         </layout>
@@ -232,8 +537,8 @@
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>20</width>
-         <height>40</height>
+         <width>13</width>
+         <height>13</height>
         </size>
        </property>
       </spacer>

@@ -6,14 +6,248 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1055</width>
-    <height>717</height>
+    <width>1149</width>
+    <height>797</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>Project Setup</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+/* ── Global ── */
+QWidget {
+    background-color: #F7F8FA;
+    font-family: &quot;Segoe UI&quot;, Arial, sans-serif;
+
+    color: #1A202C;
+}
+
+/* ── GroupBox ── */
+QGroupBox {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    margin-top: 16px;
+    padding: 12px 10px 10px 10px;
+
+    font-weight: bold;
+    color: #4A5568;
+    letter-spacing: 0.5px;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 8px;
+    left: 12px;
+    color: #4A5568;
+
+    font-weight: bold;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+/* ── Labels ── */
+QLabel {
+    background-color: transparent;
+    color: #4A5568;
+
+}
+QLabel#label_4 {
+
+    font-weight: bold;
+    color: #2D3748;
+    min-width: 130px;
+}
+
+/* ── ListView ── */
+QListView {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+
+    color: #1A202C;
+    outline: none;
+}
+QListView::item {
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+QListView::item:selected {
+    background-color: #EBF4FF;
+    color: #2563EB;
+}
+QListView::item:hover {
+    background-color: #F7FAFC;
+}
+
+/* ── LineEdit ── */
+QLineEdit {
+    background-color: #FFFFFF;
+    border: 1px solid #CBD5E0;
+    border-radius: 6px;
+    padding: 7px 12px;
+
+    color: #1A202C;
+    min-height: 34px;
+    selection-background-color: #EBF4FF;
+}
+QLineEdit:focus { border-color: #2563EB; }
+QLineEdit:disabled {
+    background-color: #EDF2F7;
+    color: #A0AEC0;
+}
+
+/* ── ComboBox ── */
+QComboBox {
+    background-color: #FFFFFF;
+    border: 1px solid #CBD5E0;
+    border-radius: 6px;
+    padding: 6px 12px;
+
+    min-height: 34px;
+}
+QComboBox:hover { border-color: #2563EB; }
+
+QComboBox QAbstractItemView {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    selection-background-color: #EBF4FF;
+    selection-color: #2563EB;
+    padding: 4px;
+}
+
+/* ── RadioButton ── */
+QRadioButton {
+
+    color: #4A5568;
+    spacing: 8px;
+}
+QRadioButton::indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 8px;
+    border: 2px solid #CBD5E0;
+    background-color: #FFFFFF;
+}
+QRadioButton::indicator:checked {
+    border-color: #2563EB;
+    background-color: #2563EB;
+}
+
+/* ── SpinBox ── */
+QSpinBox {
+    background-color: #FFFFFF;
+    border: 1px solid #CBD5E0;
+    border-radius: 6px;
+    padding: 5px 8px;
+
+    min-height: 32px;
+}
+QSpinBox:focus { border-color: #2563EB; }
+QSpinBox::up-button, QSpinBox::down-button {
+    width: 20px;
+    border: none;
+    background-color: #EDF2F7;
+}
+QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+    background-color: #E2E8F0;
+}
+
+/* ── ToolBox ── */
+QToolBox::tab {
+    background-color: #EDF2F7;
+    color: #2D3748;
+
+    font-weight: bold;
+    border: 1px solid #E2E8F0;
+    border-radius: 4px;
+    padding: 66px 10px;
+}
+QToolBox::tab:selected {
+    background-color: #EBF4FF;
+    color: #2563EB;
+    border-color: #BEE3F8;
+}
+
+/* ── Camera frame ── */
+QLabel#img_cam {
+    background-color: #1A202C;
+    border: 1px solid #2D3748;
+    border-radius: 6px;
+    color: #4A5568;
+
+}
+
+/* ── Buttons ── */
+QPushButton#btn_add_project {
+    background-color: #FFFFFF;
+    color: #2563EB;
+
+    font-weight: bold;
+    border: 1px solid #BEE3F8;
+    border-radius: 6px;
+    padding: 7px 16px;
+    min-height: 34px;
+}
+QPushButton#btn_add_project:hover {
+    background-color: #EBF4FF;
+    border-color: #90CDF4;
+}
+QPushButton#btn_add_project:pressed { background-color: #BEE3F8; }
+
+QPushButton#btn_create_project {
+    background-color: #2563EB;
+    color: #FFFFFF;
+
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 20px;
+    min-height: 34px;
+}
+QPushButton#btn_create_project:hover { background-color: #1D4ED8; }
+QPushButton#btn_create_project:pressed { background-color: #1E40AF; }
+QPushButton#btn_create_project:disabled {
+    background-color: #BEE3F8;
+    color: #90CDF4;
+}
+
+QPushButton#btn_execute_trigger {
+    background-color: #D97706;
+    color: #FFFFFF;
+
+    font-weight: bold;
+    border: none;
+    border-radius: 6px;
+    padding: 7px 16px;
+    min-height: 34px;
+}
+QPushButton#btn_execute_trigger:hover { background-color: #B45309; }
+QPushButton#btn_execute_trigger:pressed { background-color: #92400E; }
+
+QPushButton#btn_save_camera_config {
+    background-color: #38A169;
+    color: #FFFFFF;
+
+    font-weight: bold;
+    border: none;
+    border-radius: 7px;
+    padding: 10px 28px;
+    min-height: 42px;
+}
+QPushButton#btn_save_camera_config:hover { background-color: #2F855A; }
+QPushButton#btn_save_camera_config:pressed { background-color: #276749; }
+   </string>
   </property>
   <layout class="QHBoxLayout" name="horizontalLayout_12">
+   <property name="spacing">
+    <number>16</number>
+   </property>
+   <property name="contentsMargins" stdset="0">
+    <number>16</number>
+   </property>
    <item>
     <widget class="QGroupBox" name="groupBox">
      <property name="sizePolicy">
@@ -24,80 +258,113 @@
      </property>
      <property name="font">
       <font>
+       <family>Segoe UI,Arial,sans-serif</family>
        <pointsize>15</pointsize>
        <weight>75</weight>
        <bold>true</bold>
       </font>
      </property>
      <property name="title">
-      <string>Project</string>
+      <string>PROJECT</string>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <property name="spacing">
+       <number>10</number>
+      </property>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout">
-          <item>
-           <widget class="QPushButton" name="btn_add_project">
-            <property name="text">
-             <string>+ Add Project</string>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <widget class="QListView" name="listView"/>
-        </item>
-       </layout>
+       <widget class="QPushButton" name="btn_add_project">
+        <property name="font">
+         <font>
+          <family>Segoe UI,Arial,sans-serif</family>
+          <pointsize>12</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>+ Add Project</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QListView" name="listView"/>
       </item>
      </layout>
     </widget>
    </item>
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_4">
+     <property name="spacing">
+      <number>12</number>
+     </property>
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_9">
+       <property name="spacing">
+        <number>10</number>
+       </property>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_8">
-         <item>
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>Name Project:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="text_name_project">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
+        <widget class="QLabel" name="label_4">
+         <property name="font">
+          <font>
+           <family>Segoe UI,Arial,sans-serif</family>
+           <pointsize>12</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="text">
+          <string>Name Project:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="text_name_project">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="font">
+          <font>
+           <family>Segoe UI,Arial,sans-serif</family>
+           <pointsize>12</pointsize>
+          </font>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QPushButton" name="btn_create_project">
          <property name="enabled">
           <bool>false</bool>
          </property>
+         <property name="minimumSize">
+          <size>
+           <width>160</width>
+           <height>48</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>180</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>Segoe UI,Arial,sans-serif</family>
+           <pointsize>12</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
          <property name="text">
           <string>Create</string>
          </property>
         </widget>
-       </item>
-       <item>
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
        </item>
       </layout>
      </item>
@@ -109,11 +376,11 @@
          <height>300</height>
         </size>
        </property>
-       <property name="frameShape">
-        <enum>QFrame::Box</enum>
+       <property name="styleSheet">
+        <string notr="true">background-color: #EDF2F7;</string>
        </property>
        <property name="text">
-        <string/>
+        <string>Camera Preview</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
@@ -123,419 +390,447 @@
     </layout>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox_3">
-     <property name="minimumSize">
-      <size>
-       <width>300</width>
-       <height>0</height>
-      </size>
-     </property>
+    <widget class="QGroupBox" name="groupBox_2">
      <property name="maximumSize">
       <size>
-       <width>300</width>
+       <width>400</width>
        <height>16777215</height>
       </size>
      </property>
-     <property name="title">
-      <string/>
+     <property name="font">
+      <font>
+       <family>Segoe UI,Arial,sans-serif</family>
+       <pointsize>15</pointsize>
+       <weight>75</weight>
+       <bold>true</bold>
+      </font>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_7">
+     <property name="title">
+      <string>CONFIG CAMERA</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_8">
+      <property name="spacing">
+       <number>10</number>
+      </property>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout_6">
-        <item>
+       <widget class="QLabel" name="label_2">
+        <property name="font">
+         <font>
+          <family>Segoe UI,Arial,sans-serif</family>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Select Device</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="devices_online">
+        <property name="font">
+         <font>
+          <family>Segoe UI,Arial,sans-serif</family>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolBox" name="toolBox">
+        <property name="font">
+         <font>
+          <family>Segoe UI,Arial,sans-serif</family>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
+        <property name="currentIndex">
+         <number>1</number>
+        </property>
+        <property name="tabSpacing">
+         <number>6</number>
+        </property>
+        <widget class="QWidget" name="page">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>300</width>
+           <height>296</height>
+          </rect>
+         </property>
+         <attribute name="label">
+          <string>ImageFormatControl</string>
+         </attribute>
          <layout class="QVBoxLayout" name="verticalLayout_5">
+          <property name="spacing">
+           <number>8</number>
+          </property>
           <item>
-           <widget class="QLabel" name="label_3">
+           <layout class="QHBoxLayout">
+            <item>
+             <widget class="QLabel" name="label_5">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>MaxWidth</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_11">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>2448</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout">
+            <item>
+             <widget class="QLabel" name="label_6">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>MaxHeight</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_12">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>2048</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout">
+            <item>
+             <widget class="QLabel" name="label_7">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Width</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="width_img">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="minimum">
+               <number>16</number>
+              </property>
+              <property name="maximum">
+               <number>2448</number>
+              </property>
+              <property name="value">
+               <number>2448</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout">
+            <item>
+             <widget class="QLabel" name="label_8">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Height</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="height_img">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="minimum">
+               <number>4</number>
+              </property>
+              <property name="maximum">
+               <number>2048</number>
+              </property>
+              <property name="value">
+               <number>2048</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout">
+            <item>
+             <widget class="QLabel" name="label_9">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>OffsetX</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="offset_x">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="maximum">
+               <number>2000</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QHBoxLayout">
+            <item>
+             <widget class="QLabel" name="label_10">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>OffsetY</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="offset_y">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="maximum">
+               <number>2000</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <spacer>
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="page_2">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>300</width>
+           <height>205</height>
+          </rect>
+         </property>
+         <attribute name="label">
+          <string>TriggerControl</string>
+         </attribute>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <property name="spacing">
+           <number>10</number>
+          </property>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <item>
+             <widget class="QLabel" name="label">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Trigger Mode</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="trigge_mode">
+              <property name="font">
+               <font>
+                <family>Segoe UI,Arial,sans-serif</family>
+                <pointsize>12</pointsize>
+               </font>
+              </property>
+              <property name="currentIndex">
+               <number>0</number>
+              </property>
+              <item>
+               <property name="text">
+                <string>Continuous</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>SoftwareTrig</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QPushButton" name="btn_execute_trigger">
             <property name="sizePolicy">
-             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
               <horstretch>0</horstretch>
               <verstretch>0</verstretch>
              </sizepolicy>
             </property>
             <property name="minimumSize">
              <size>
-              <width>400</width>
-              <height>0</height>
+              <width>0</width>
+              <height>48</height>
              </size>
             </property>
-            <property name="maximumSize">
-             <size>
-              <width>400</width>
-              <height>400</height>
-             </size>
+            <property name="font">
+             <font>
+              <family>Segoe UI,Arial,sans-serif</family>
+              <pointsize>12</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="cursor">
+             <cursorShape>PointingHandCursor</cursorShape>
             </property>
             <property name="text">
-             <string>Position Camera</string>
+             <string>Execute Trigger</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QComboBox" name="camera_pos">
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
+           <spacer>
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
             </property>
-            <property name="currentIndex">
-             <number>0</number>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
             </property>
-            <item>
-             <property name="text">
-              <string>Camera Front</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Camera Back</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Camera Left</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Camera Right</string>
-             </property>
-            </item>
-            <item>
-             <property name="text">
-              <string>Camera Upper</string>
-             </property>
-            </item>
-           </widget>
+           </spacer>
           </item>
          </layout>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="groupBox_2">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="title">
-           <string>Config Camera</string>
-          </property>
-          <property name="alignment">
-           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-          </property>
-          <property name="flat">
-           <bool>false</bool>
-          </property>
-          <property name="checkable">
-           <bool>false</bool>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_6">
-           <item>
-            <layout class="QVBoxLayout" name="verticalLayout_3">
-             <item>
-              <widget class="QLabel" name="label_2">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Select Device</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="devices_online">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="minimumSize">
-                <size>
-                 <width>0</width>
-                 <height>0</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>16777215</width>
-                 <height>16777215</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QRadioButton" name="open_camera">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="text">
-                <string>Play</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolBox" name="toolBox">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <property name="currentIndex">
-                <number>0</number>
-               </property>
-               <widget class="QWidget" name="page">
-                <property name="geometry">
-                 <rect>
-                  <x>0</x>
-                  <y>0</y>
-                  <width>256</width>
-                  <height>195</height>
-                 </rect>
-                </property>
-                <attribute name="label">
-                 <string>ImageFormatControl</string>
-                </attribute>
-                <layout class="QHBoxLayout" name="horizontalLayout_19">
-                 <item>
-                  <layout class="QVBoxLayout" name="verticalLayout_7">
-                   <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_13">
-                     <item>
-                      <widget class="QLabel" name="label_5">
-                       <property name="text">
-                        <string>MaxWidth</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QLabel" name="label_11">
-                       <property name="text">
-                        <string>2448</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </item>
-                   <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_14">
-                     <item>
-                      <widget class="QLabel" name="label_6">
-                       <property name="text">
-                        <string>MaxHeight</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QLabel" name="label_12">
-                       <property name="text">
-                        <string>2448</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </item>
-                   <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_15">
-                     <item>
-                      <widget class="QLabel" name="label_7">
-                       <property name="text">
-                        <string>Width</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QSpinBox" name="width_img">
-                       <property name="minimum">
-                        <number>16</number>
-                       </property>
-                       <property name="maximum">
-                        <number>2448</number>
-                       </property>
-                       <property name="value">
-                        <number>2448</number>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </item>
-                   <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_16">
-                     <item>
-                      <widget class="QLabel" name="label_8">
-                       <property name="text">
-                        <string>Height</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QSpinBox" name="height_img">
-                       <property name="minimum">
-                        <number>4</number>
-                       </property>
-                       <property name="maximum">
-                        <number>2048</number>
-                       </property>
-                       <property name="value">
-                        <number>2048</number>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </item>
-                   <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_17">
-                     <item>
-                      <widget class="QLabel" name="label_9">
-                       <property name="text">
-                        <string>OffsetX</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QSpinBox" name="offset_x">
-                       <property name="maximum">
-                        <number>2000</number>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </item>
-                   <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_18">
-                     <item>
-                      <widget class="QLabel" name="label_10">
-                       <property name="text">
-                        <string>OffsetY</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QSpinBox" name="offset_y">
-                       <property name="maximum">
-                        <number>2000</number>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
-               </widget>
-               <widget class="QWidget" name="page_2">
-                <property name="geometry">
-                 <rect>
-                  <x>0</x>
-                  <y>0</y>
-                  <width>256</width>
-                  <height>195</height>
-                 </rect>
-                </property>
-                <attribute name="label">
-                 <string>TriggerControl</string>
-                </attribute>
-                <layout class="QHBoxLayout" name="horizontalLayout_5">
-                 <item>
-                  <layout class="QVBoxLayout" name="verticalLayout_2">
-                   <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_3">
-                     <item>
-                      <widget class="QLabel" name="label">
-                       <property name="text">
-                        <string>TriggerMode</string>
-                       </property>
-                      </widget>
-                     </item>
-                     <item>
-                      <widget class="QComboBox" name="trigge_mode">
-                       <property name="currentIndex">
-                        <number>0</number>
-                       </property>
-                       <item>
-                        <property name="text">
-                         <string>Continuos</string>
-                        </property>
-                       </item>
-                       <item>
-                        <property name="text">
-                         <string>SoftwareTrig</string>
-                        </property>
-                       </item>
-                      </widget>
-                     </item>
-                    </layout>
-                   </item>
-                   <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout_4">
-                     <item>
-                      <widget class="QPushButton" name="btn_execute_trigger">
-                       <property name="text">
-                        <string>Execute</string>
-                       </property>
-                      </widget>
-                     </item>
-                    </layout>
-                   </item>
-                   <item>
-                    <spacer name="verticalSpacer_2">
-                     <property name="orientation">
-                      <enum>Qt::Vertical</enum>
-                     </property>
-                     <property name="sizeHint" stdset="0">
-                      <size>
-                       <width>20</width>
-                       <height>40</height>
-                      </size>
-                     </property>
-                    </spacer>
-                   </item>
-                  </layout>
-                 </item>
-                </layout>
-               </widget>
-              </widget>
-             </item>
-             <item>
-              <spacer name="verticalSpacer">
-               <property name="orientation">
-                <enum>Qt::Vertical</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>20</width>
-                 <height>40</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
-              <layout class="QHBoxLayout" name="horizontalLayout_10">
-               <item>
-                <widget class="QPushButton" name="btn_save_camera_config">
-                 <property name="text">
-                  <string>SAVE Config</string>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </item>
-            </layout>
-           </item>
-          </layout>
-         </widget>
-        </item>
-       </layout>
+        </widget>
+       </widget>
+      </item>
+      <item>
+       <spacer>
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>0</width>
+          <height>0</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_save_camera_config">
+        <property name="font">
+         <font>
+          <family>Segoe UI,Arial,sans-serif</family>
+          <pointsize>15</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="cursor">
+         <cursorShape>PointingHandCursor</cursorShape>
+        </property>
+        <property name="text">
+         <string>Save Config</string>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

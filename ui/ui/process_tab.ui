@@ -10,277 +10,587 @@
     <height>960</height>
    </rect>
   </property>
-  <property name="windowTitle">
-   <string>Form</string>
+  <property name="font">
+   <font>
+    <family>Segoe UI,Arial,sans-serif</family>
+    <pointsize>9</pointsize>
+   </font>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout_5">
+  <property name="windowTitle">
+   <string>Process</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+/* ── Global ── */
+QWidget {
+    background-color: #F7F8FA;
+    font-family: &quot;Segoe UI&quot;, Arial, sans-serif;
+
+    color: #1A202C;
+}
+
+/* ── Toolbar row ── */
+QWidget#toolbarRow {
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #E2E8F0;
+    min-height: 64px;
+    max-height: 64px;
+}
+
+/* ── Labels ── */
+QLabel {
+    background-color: transparent;
+    color: #4A5568;
+}
+
+/* ── ComboBox ── */
+QComboBox {
+    background-color: #FFFFFF;
+    border: 1px solid #CBD5E0;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: #1A202C;
+    min-height: 36px;
+    selection-background-color: #EBF4FF;
+}
+QComboBox:hover { border-color: #2563EB; }
+
+QComboBox QAbstractItemView {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 6px;
+    selection-background-color: #EBF4FF;
+    selection-color: #2563EB;
+    padding: 4px;
+}
+
+/* ── Play button ── */
+QPushButton#btn_play {
+    background-color: #38A169;
+    color: #FFFFFF;
+
+    font-weight: bold;
+    border: none;
+    border-radius: 7px;
+    padding: 0px 28px;
+    min-height: 42px;
+    min-width: 130px;
+    max-width: 130px;
+}
+QPushButton#btn_play:hover { background-color: #2F855A; }
+QPushButton#btn_play:pressed { background-color: #276749; }
+
+/* ── Stop button ── */
+QPushButton#btn_stop {
+    background-color: #FFFFFF;
+    color: #E53E3E;
+
+    font-weight: bold;
+    border: 2px solid #FC8181;
+    border-radius: 7px;
+    padding: 0px 28px;
+    min-height: 42px;
+    min-width: 130px;
+    max-width: 130px;
+}
+QPushButton#btn_stop:hover {
+    background-color: #FFF5F5;
+    border-color: #E53E3E;
+}
+QPushButton#btn_stop:pressed {
+    background-color: #FED7D7;
+}
+
+/* ── Camera frames ── */
+QFrame#frame_1, QFrame#frame_2, QFrame#frame_3, QFrame#frame_4, QFrame#frame_5 {
+    background-color: #1A202C;
+    border: 1px solid #2D3748;
+    border-radius: 6px;
+}
+QLabel#cam_1, QLabel#cam_2, QLabel#cam_3, QLabel#cam_4, QLabel#cam_5 {
+    color: #4A5568;
+
+    background-color: transparent;
+}
+
+/* ── Result panel ── */
+QFrame#frame_6 {
+    background-color: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+}
+QLabel#text_result {
+    background-color: transparent;
+    color: #1A202C;
+
+    font-weight: bold;
+    border: none;
+}
+   </string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout_3">
+    <layout class="QHBoxLayout" name="horizontalLayout_10">
+     <property name="spacing">
+      <number>16</number>
+     </property>
+     <property name="contentsMargins" stdset="0">
+      <number>0</number>
+     </property>
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
+      <layout class="QHBoxLayout" name="horizontalLayout_9">
+       <property name="spacing">
+        <number>8</number>
+       </property>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_10">
+        <widget class="QLabel" name="label_7">
+         <property name="font">
+          <font>
+           <family>Segoe UI,Arial,sans-serif</family>
+           <pointsize>12</pointsize>
+          </font>
+         </property>
+         <property name="text">
+          <string>Select project:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="name_project">
+         <property name="minimumSize">
+          <size>
+           <width>220</width>
+           <height>50</height>
+          </size>
+         </property>
+         <property name="font">
+          <font>
+           <family>Segoe UI,Arial,sans-serif</family>
+           <pointsize>12</pointsize>
+          </font>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QFrame" name="divider1">
+       <property name="styleSheet">
+        <string>color: #E2E8F0;</string>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::VLine</enum>
+       </property>
+       <property name="frameShadow">
+        <enum>QFrame::Plain</enum>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
+       <property name="spacing">
+        <number>10</number>
+       </property>
+       <item>
+        <widget class="QPushButton" name="btn_play">
+         <property name="font">
+          <font>
+           <family>Segoe UI,Arial,sans-serif</family>
+           <pointsize>15</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
+         <property name="text">
+          <string>▶  Play</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="btn_stop">
+         <property name="font">
+          <font>
+           <family>Segoe UI,Arial,sans-serif</family>
+           <pointsize>15</pointsize>
+           <weight>75</weight>
+           <bold>true</bold>
+          </font>
+         </property>
+         <property name="cursor">
+          <cursorShape>PointingHandCursor</cursorShape>
+         </property>
+         <property name="text">
+          <string>■  Stop</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_11">
+       <item>
+        <layout class="QVBoxLayout" name="_5">
+         <property name="spacing">
+          <number>4</number>
+         </property>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_9">
-           <item>
-            <widget class="QLabel" name="label_7">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>12</pointsize>
-              </font>
-             </property>
-             <property name="text">
-              <string>Select project:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QComboBox" name="name_project">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="sizeIncrement">
-              <size>
-               <width>0</width>
-               <height>20</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <widget class="QPushButton" name="btn_play">
-           <property name="text">
-            <string>Play</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="btn_stop">
-           <property name="text">
-            <string>Stop</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeType">
-            <enum>QSizePolicy::Expanding</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
+          <widget class="QLabel" name="label_2">
+           <property name="maximumSize">
             <size>
-             <width>10</width>
-             <height>20</height>
+             <width>16777215</width>
+             <height>30</height>
             </size>
            </property>
-          </spacer>
+           <property name="font">
+            <font>
+             <family>Segoe UI,Arial,sans-serif</family>
+             <pointsize>10</pointsize>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"> color: #718096;</string>
+           </property>
+           <property name="text">
+            <string>Inspected Today</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QLabel" name="inspectedCountLabel">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>50</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Segoe UI,Arial,sans-serif</family>
+             <pointsize>30</pointsize>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"> font-weight: bold; color: #1A202C;</string>
+           </property>
+           <property name="text">
+            <string>0</string>
+           </property>
+          </widget>
          </item>
         </layout>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayout">
+        <layout class="QVBoxLayout" name="_8">
+         <property name="spacing">
+          <number>4</number>
+         </property>
          <item>
-          <widget class="QFrame" name="frame_1">
-           <property name="frameShape">
-            <enum>QFrame::Box</enum>
+          <widget class="QLabel" name="label_5">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>30</height>
+            </size>
            </property>
-           <property name="frameShadow">
-            <enum>QFrame::Raised</enum>
+           <property name="font">
+            <font>
+             <family>Segoe UI,Arial,sans-serif</family>
+             <pointsize>10</pointsize>
+            </font>
            </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_2">
-            <item>
-             <widget class="QLabel" name="cam_1">
-              <property name="text">
-               <string/>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <property name="styleSheet">
+            <string notr="true"> color: #718096;</string>
+           </property>
+           <property name="text">
+            <string>Rejected Today</string>
+           </property>
           </widget>
          </item>
          <item>
-          <widget class="QFrame" name="frame_2">
-           <property name="frameShape">
-            <enum>QFrame::Box</enum>
+          <widget class="QLabel" name="rejectedCountLabel">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>50</height>
+            </size>
            </property>
-           <property name="frameShadow">
-            <enum>QFrame::Raised</enum>
+           <property name="font">
+            <font>
+             <family>Segoe UI,Arial,sans-serif</family>
+             <pointsize>30</pointsize>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
            </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_3">
-            <item>
-             <widget class="QLabel" name="cam_2">
-              <property name="text">
-               <string/>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <property name="styleSheet">
+            <string notr="true"> font-weight: bold; color: #1A202C;</string>
+           </property>
+           <property name="text">
+            <string>0</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="_6">
+         <property name="spacing">
+          <number>4</number>
+         </property>
+         <item>
+          <widget class="QLabel" name="label_3">
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>30</height>
+            </size>
+           </property>
+           <property name="font">
+            <font>
+             <family>Segoe UI,Arial,sans-serif</family>
+             <pointsize>10</pointsize>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"> color: #718096;</string>
+           </property>
+           <property name="text">
+            <string>Defect Rate</string>
+           </property>
           </widget>
          </item>
          <item>
-          <widget class="QFrame" name="frame_3">
-           <property name="frameShape">
-            <enum>QFrame::Box</enum>
+          <widget class="QLabel" name="defectRateLabel">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
            </property>
-           <property name="frameShadow">
-            <enum>QFrame::Raised</enum>
+           <property name="maximumSize">
+            <size>
+             <width>16777215</width>
+             <height>50</height>
+            </size>
            </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_4">
-            <item>
-             <widget class="QLabel" name="cam_3">
-              <property name="text">
-               <string/>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <property name="font">
+            <font>
+             <family>Segoe UI,Arial,sans-serif</family>
+             <pointsize>30</pointsize>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
+           <property name="styleSheet">
+            <string notr="true"> font-weight: bold; color: #E53E3E;</string>
+           </property>
+           <property name="text">
+            <string>0.00 %</string>
+           </property>
           </widget>
-         </item>
-         <item>
-          <widget class="QFrame" name="frame_4">
-           <property name="frameShape">
-            <enum>QFrame::Box</enum>
-           </property>
-           <property name="frameShadow">
-            <enum>QFrame::Raised</enum>
-           </property>
-           <layout class="QHBoxLayout" name="horizontalLayout_6">
-            <item>
-             <widget class="QLabel" name="cam_4">
-              <property name="text">
-               <string/>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-         </item>
-         <item>
-          <layout class="QVBoxLayout" name="verticalLayout">
-           <item>
-            <widget class="QFrame" name="frame_6">
-             <property name="frameShape">
-              <enum>QFrame::StyledPanel</enum>
-             </property>
-             <property name="frameShadow">
-              <enum>QFrame::Raised</enum>
-             </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_8">
-              <item>
-               <widget class="QLabel" name="text_result">
-                <property name="font">
-                 <font>
-                  <pointsize>150</pointsize>
-                 </font>
-                </property>
-                <property name="frameShape">
-                 <enum>QFrame::Box</enum>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QFrame" name="frame_5">
-             <property name="frameShape">
-              <enum>QFrame::Box</enum>
-             </property>
-             <property name="frameShadow">
-              <enum>QFrame::Raised</enum>
-             </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_7">
-              <item>
-               <widget class="QLabel" name="cam_5">
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignCenter</set>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-          </layout>
          </item>
         </layout>
        </item>
       </layout>
      </item>
      <item>
-      <widget class="QLabel" name="label">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>16777215</width>
-         <height>100</height>
-        </size>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>20</pointsize>
-        </font>
+      <layout class="QHBoxLayout" name="horizontalLayout_12"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="spacing">
+      <number>8</number>
+     </property>
+     <property name="contentsMargins" stdset="0">
+      <number>12</number>
+     </property>
+     <item>
+      <widget class="QFrame" name="frame_1">
+       <property name="styleSheet">
+        <string notr="true">background-color: #EDF2F7;</string>
        </property>
        <property name="frameShape">
-        <enum>QFrame::Box</enum>
+        <enum>QFrame::StyledPanel</enum>
        </property>
-       <property name="text">
-        <string>RUNNING</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <property name="contentsMargins" stdset="0">
+         <number>4</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="cam_1">
+          <property name="styleSheet">
+           <string notr="true">background-color: #EDF2F7;</string>
+          </property>
+          <property name="text">
+           <string>CAM 1</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="frame_2">
+       <property name="styleSheet">
+        <string notr="true">background-color: #EDF2F7;</string>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <property name="contentsMargins" stdset="0">
+         <number>4</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="cam_2">
+          <property name="styleSheet">
+           <string notr="true">background-color: #EDF2F7;</string>
+          </property>
+          <property name="text">
+           <string>CAM 2</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="frame_3">
+       <property name="styleSheet">
+        <string notr="true">background-color: #EDF2F7;</string>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <property name="contentsMargins" stdset="0">
+         <number>4</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="cam_3">
+          <property name="text">
+           <string>CAM 3</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QFrame" name="frame_4">
+       <property name="styleSheet">
+        <string notr="true">background-color: #EDF2F7;</string>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_6">
+        <property name="contentsMargins" stdset="0">
+         <number>4</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="cam_4">
+          <property name="text">
+           <string>CAM 4</string>
+          </property>
+          <property name="alignment">
+           <set>Qt::AlignCenter</set>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <property name="spacing">
+        <number>8</number>
+       </property>
+       <item>
+        <widget class="QFrame" name="frame_6">
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_8">
+          <property name="contentsMargins" stdset="0">
+           <number>8</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="text_result">
+            <property name="font">
+             <font>
+              <family>Segoe UI,Arial,sans-serif</family>
+              <pointsize>80</pointsize>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QFrame" name="frame_5">
+         <property name="styleSheet">
+          <string notr="true">background-color: #EDF2F7;</string>
+         </property>
+         <property name="frameShape">
+          <enum>QFrame::StyledPanel</enum>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <property name="contentsMargins" stdset="0">
+           <number>4</number>
+          </property>
+          <item>
+           <widget class="QLabel" name="cam_5">
+            <property name="text">
+             <string>CAM 5</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>
