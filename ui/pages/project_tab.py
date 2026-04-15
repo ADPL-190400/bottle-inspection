@@ -1,6 +1,6 @@
 # coding=utf-8
 from PyQt6 import uic, QtWidgets
-from PyQt6.QtCore import Qt, pyqtSignal, QThread
+from PyQt6.QtCore import Qt, pyqtSignal, QThread, QStringListModel
 from PyQt6.QtWidgets import QMessageBox
 import queue
 import numpy as np
@@ -62,6 +62,7 @@ class ProjectTab(QtWidgets.QWidget):
         self._trigger_worker       = None   # TriggerWorker (queue listener)
 
         self._setup_initial_state()
+        self._setup_project_list()
         self._connect_signals()
         self._list_camera()
         self._init_trigger_camera()
@@ -91,9 +92,12 @@ class ProjectTab(QtWidgets.QWidget):
     def _connect_signals(self):
         self.btn_add_project.clicked.connect(self._on_add_project_clicked)
         self.btn_create_project.clicked.connect(self._on_create_project_clicked)
+        self.btn_delete_project.clicked.connect(self._on_delete_project_clicked)
         self.devices_online.currentIndexChanged.connect(self._on_device_selected)
         self.btn_execute_trigger.clicked.connect(self._on_execute_trigger_clicked)
         self.btn_save_camera_config.clicked.connect(self._on_save_camera_config_clicked)
+        self.list_project.selectionModel().selectionChanged.connect(self._on_project_selected)
+        
 
         self.width_img.editingFinished.connect(
             lambda: self._read_and_fix_spinbox(self.width_img,  step=16, minimum=16,  maximum=2448))
@@ -153,11 +157,48 @@ class ProjectTab(QtWidgets.QWidget):
             QMessageBox.critical(self, "Lỗi camera", f"CameraInit Failed:\n{e.message}")
             self._hCamera = None
             return False
+        
 
-        mvsdk.CameraReadParameterFromFile(
-            self._hCamera,
-            "/home/via/Documents/bottle-inspection-main/default.config"
-        )
+        project_name = self.text_name_project.text().strip()
+
+        if not project_name:
+            QMessageBox.warning(self, "Cảnh báo", "Vui lòng nhập tên project!")
+            self.text_name_project.setFocus()
+            return
+
+        invalid_chars = r'\/:*?"<>|'
+        if any(ch in project_name for ch in invalid_chars):
+            QMessageBox.warning(self, "Cảnh báo",
+                                f"Tên project không được chứa các ký tự: {invalid_chars}")
+            return
+
+        if self._hCamera is None or self._current_dev_info is None:
+            QMessageBox.warning(self, "Cảnh báo", "Chưa có camera nào được mở!")
+            return
+
+        projects_root = os.path.join(BASE_DIR, "projects")
+        project_dir   = os.path.join(projects_root, project_name)
+
+        link_name = self._current_dev_info.acSn
+        if isinstance(link_name, bytes):
+            link_name = link_name.decode()
+
+        config_filename = f"{link_name}.config"
+        path_camera = os.path.join(project_dir, "camera_config", config_filename)
+        path_camera_default = os.path.join(BASE_DIR, "default.config")
+
+        if os.path.exists(path_camera):
+            mvsdk.CameraReadParameterFromFile(
+                self._hCamera,
+                path_camera
+            )       
+        elif os.path.exists(path_camera_default):       
+            mvsdk.CameraReadParameterFromFile(
+                self._hCamera,
+                path_camera_default
+            )
+
+
         cap = mvsdk.CameraGetCapability(self._hCamera)
         self._mono_camera = (cap.sIspCapacity.bMonoSensor != 0)
 
@@ -314,6 +355,34 @@ class ProjectTab(QtWidgets.QWidget):
         except mvsdk.CameraException as e:
             QMessageBox.critical(self, "Lỗi", f"Không thể lưu cấu hình:\n{e.message}")
 
+
+    # ------------------------------------------------------------------
+    # Project list
+    # ------------------------------------------------------------------
+
+    def _setup_project_list(self):
+        self._project_list_model = QStringListModel()
+        self.list_project.setModel(self._project_list_model)
+        self._refresh_project_list()
+
+    def _refresh_project_list(self):
+        projects_root = os.path.join(BASE_DIR, "projects")
+        if not os.path.isdir(projects_root):
+            self._project_list_model.setStringList([])
+            return
+        entries = sorted(
+            e for e in os.listdir(projects_root)
+            if os.path.isdir(os.path.join(projects_root, e))
+        )
+        self._project_list_model.setStringList(entries)
+
+    def _on_project_selected(self, selected, _):
+        indexes = selected.indexes()
+        if not indexes:
+            return
+        name = self._project_list_model.data(indexes[0])
+        self.text_name_project.setText(name)
+
     # ------------------------------------------------------------------
     # Project management
     # ------------------------------------------------------------------
@@ -351,6 +420,7 @@ class ProjectTab(QtWidgets.QWidget):
                                     f"Project '{project_name}' đã được tạo thành công!\n"
                                     f"Đường dẫn: {project_dir}")
             self._setup_initial_state()
+            self._refresh_project_list()
         except Exception as e:
             QMessageBox.critical(self, "Lỗi", f"Không thể tạo project:\n{str(e)}")
 
@@ -377,6 +447,36 @@ class ProjectTab(QtWidgets.QWidget):
         json_path = os.path.join(project_dir, "project_info.json")
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(project_info, f, ensure_ascii=False, indent=4)
+
+    def _on_delete_project_clicked(self):
+        project_name = self.text_name_project.text().strip()
+
+        if not project_name:
+            QMessageBox.warning(self, "Cảnh báo", "Chưa có project nào được chọn!")
+            return
+
+        projects_root = os.path.join(BASE_DIR, "projects")
+        project_dir   = os.path.join(projects_root, project_name)
+
+        if not os.path.exists(project_dir):
+            self._refresh_project_list()
+            return
+
+        reply = QMessageBox.question(
+            self, "Xác nhận xóa",
+            f"Bạn có chắc muốn xóa project '{project_name}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        try:
+            import shutil
+            shutil.rmtree(project_dir)
+            self.text_name_project.clear()
+            self._refresh_project_list()
+        except Exception as e:
+            QMessageBox.critical(self, "Lỗi", f"Không thể xóa project:\n{str(e)}")
 
     # ------------------------------------------------------------------
     # Cleanup

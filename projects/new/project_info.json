@@ -1,0 +1,15 @@
+{
+    "project_name": "new",
+    "created_at": "2026-04-15 10:37:40",
+    "description": "",
+    "camera_config": {
+        "cameras": []
+    },
+    "settings": {
+        "goods_dir": "goods",
+        "memory_bank_dir": "memory_bank",
+        "camera_config_dir": "camera_config",
+        "threshold": null,
+        "ratio_liquid": null
+    }
+}
