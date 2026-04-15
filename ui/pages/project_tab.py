@@ -191,10 +191,12 @@ class ProjectTab(QtWidgets.QWidget):
 
         # Doc cau hinh camera tu file (neu co) sau khi mo camera thanh cong
         img_size = mvsdk.CameraGetImageResolution(self._hCamera)
+        exposure_time = mvsdk.CameraGetExposureTime(self._hCamera)
         self.width_img.setValue(img_size.iWidth)
         self.height_img.setValue(img_size.iHeight)
         self.offset_x.setValue(img_size.iHOffsetFOV)
         self.offset_y.setValue(img_size.iVOffsetFOV)
+        self.exposure_time.setValue(int(exposure_time))
 
         cap = mvsdk.CameraGetCapability(self._hCamera)
         self._mono_camera = (cap.sIspCapacity.bMonoSensor != 0)
@@ -271,8 +273,11 @@ class ProjectTab(QtWidgets.QWidget):
             return
 
         width, height, offset_x, offset_y = self._get_img_params()
-
+        exposure_time = self.exposure_time.value()
+        
         try:
+            mvsdk.CameraSetExposureTime(self._hCamera, exposure_time)
+            
             img_size = mvsdk.CameraGetImageResolution(self._hCamera)
             img_size.iHOffsetFOV = offset_x
             img_size.iVOffsetFOV = offset_y
