@@ -763,6 +763,8 @@ def build_bank(goods_dir: Path,
             continue
 
         train_files, val_files = _split_train_val(image_files, train_ratio, seed)
+        if not val_files:
+            val_files = train_files[:]
         bank_path = output_dir / POSITION_BANK_FILENAMES[model_name]
         print(f"[BuildBank] Build {model_name}: total={len(image_files)} train={len(train_files)} val={len(val_files)}")
         bank = _build_single_bank(train_files, model_engine, bank_path)

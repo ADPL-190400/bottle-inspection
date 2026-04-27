@@ -4,7 +4,8 @@ import cv2
 import numpy as np
 from hardware.camera.batch_camera import BatchCamera
 from hardware.sorting.sorting_actuator import SortingActuator
-from core.body_inspection import BodyWorker, draw_anomaly_overlay, draw_object_mask
+from core.body_inspection import draw_anomaly_overlay, draw_object_mask
+from core.positioned_body_worker import BodyWorker
 
 
 class PipelineManager(threading.Thread):
@@ -41,6 +42,7 @@ class PipelineManager(threading.Thread):
         self.sorting_queue = queue.Queue(maxsize=20)
         self._stop_event   = threading.Event()
         self._last_frames  = {}   # cam_key → BGR ndarray
+        self._display_keys = []
 
     # ----------------------------------------------------------------------- #
     def run(self):
@@ -48,6 +50,7 @@ class PipelineManager(threading.Thread):
         try:
             try:
                 thread_camera = BatchCamera(self.frames_queue, self._stop_event, self.infor_project)
+                self._display_keys = self._build_display_keys(thread_camera.get_camera_positions())
                 thread_camera.start()
                 print("[Pipeline] BatchCamera started.")
             except Exception as e:
@@ -90,14 +93,17 @@ class PipelineManager(threading.Thread):
                     continue
 
                 for cam_id, frame in enumerate(frames):
-                    cam_key = str(cam_id + 1)
+                    cam_key = self._display_keys[cam_id] if cam_id < len(self._display_keys) else str(cam_id + 1)
                     if frame is None:
                         continue
                     frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                     self._last_frames[cam_key] = frame_bgr
                     self._put_drop(self.show_queue.get(cam_key), (frame_bgr, None))
 
-                self._put_drop(self.body_in_queue, (trigger_id, frames[:4]))
+                self._put_drop(
+                    self.body_in_queue,
+                    (trigger_id, frames, thread_camera.get_camera_positions(), self._display_keys),
+                )
 
         except Exception as e:
             print(f"[Pipeline] ❌ {e}")
@@ -138,7 +144,7 @@ class PipelineManager(threading.Thread):
             for cam_id, r in enumerate(results):
                 if r is None:
                     continue
-                cam_key = str(cam_id + 1)
+                cam_key = r.get("display_key", str(cam_id + 1))
                 is_ok   = r["is_ok"]
                 liq     = r.get("liquid_result")
                 liq_str = (f"| liquid={'OK' if liq['is_ok'] else 'NG'} "
@@ -249,6 +255,19 @@ class PipelineManager(threading.Thread):
                 q.put_nowait(item)
             except queue.Full:
                 pass
+
+    @staticmethod
+    def _build_display_keys(camera_positions: list[str]) -> list[str]:
+        body_slot = 1
+        keys = []
+        for position in camera_positions:
+            normalized = str(position or "").strip().lower()
+            if normalized == "cap":
+                keys.append("5")
+            else:
+                keys.append(str(body_slot))
+                body_slot = min(body_slot + 1, 4)
+        return keys
 
     # ----------------------------------------------------------------------- #
     def _cleanup(self, thread_camera, thread_body, thread_sorting=None):
