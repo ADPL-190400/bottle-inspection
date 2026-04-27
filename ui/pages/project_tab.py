@@ -1,31 +1,33 @@
 # coding=utf-8
-from PyQt6 import uic, QtWidgets
-from PyQt6.QtCore import Qt, pyqtSignal, QThread, QStringListModel
+from PyQt6 import QtWidgets, uic
+from PyQt6.QtCore import QThread, QStringListModel, Qt, pyqtSignal
 from PyQt6.QtWidgets import QMessageBox
-import queue
-import numpy as np
-import threading
-from core.path_manager import BASE_DIR
-import os
 import json
-import platform
-from hardware.camera import mvsdk
-from utils.ultis import convert_cv_qt
-from hardware.gpio.trigger_input_camera import TriggerCamera
+import os
+import queue
+import threading
 import time
+
+from core.path_manager import BASE_DIR
+from hardware.camera.generic_camera import (
+    GenericCamera,
+    load_camera_config,
+    save_camera_config,
+)
+from hardware.gpio.trigger_input_camera import TriggerCamera
+from utils.ultis import convert_cv_qt
 
 
 BATCH_COLLECTION_TIMEOUT = 1 / 30
 
 
-# ── Worker thread: lắng nghe trigger_queue và emit signal về UI thread ──
 class TriggerWorker(QThread):
-    triggered = pyqtSignal()          # signal không có tham số, gọi về main thread
+    triggered = pyqtSignal()
 
     def __init__(self, trigger_queue: queue.Queue, stop_event: threading.Event, parent=None):
         super().__init__(parent)
         self.trigger_queue = trigger_queue
-        self.stop_event    = stop_event
+        self.stop_event = stop_event
 
     def run(self):
         print("[TriggerWorker] Running... waiting for trigger")
@@ -35,7 +37,7 @@ class TriggerWorker(QThread):
                     time.sleep(0.01)
                     continue
                 _ = self.trigger_queue.get_nowait()
-                self.triggered.emit()          # ← an toàn: Qt tự marshal sang UI thread
+                self.triggered.emit()
             except queue.Empty:
                 pass
             except Exception as e:
@@ -48,18 +50,15 @@ class ProjectTab(QtWidgets.QWidget):
         ui_path = os.path.join(BASE_DIR, "ui", "ui", "project_tab.ui")
         uic.loadUi(ui_path, self)
 
-        # Camera state
-        self._dev_list         = []
+        self._dev_list = []
         self._current_dev_info = None
-        self._hCamera          = None
-        self._pFrameBuffer     = None
-        self._mono_camera      = False
+        self._hCamera = None
+        self._camera_info = None
 
-        # Thread state
-        self.stop_event        = threading.Event()
-        self.trigger_queue     = queue.Queue(maxsize=1)
-        self.thread_trigger_camera = None   # TriggerCamera (hardware GPIO)
-        self._trigger_worker       = None   # TriggerWorker (queue listener)
+        self.stop_event = threading.Event()
+        self.trigger_queue = queue.Queue(maxsize=1)
+        self.thread_trigger_camera = None
+        self._trigger_worker = None
 
         self._setup_initial_state()
         self._setup_project_list()
@@ -67,26 +66,19 @@ class ProjectTab(QtWidgets.QWidget):
         self._list_camera()
         self._init_trigger_camera()
 
-    # ------------------------------------------------------------------
-    # Init
-    # ------------------------------------------------------------------
-
     def _setup_initial_state(self):
         self.text_name_project.setEnabled(False)
         self.btn_create_project.setEnabled(False)
         self.btn_execute_trigger.setEnabled(False)
 
     def _init_trigger_camera(self):
-        """Khởi động TriggerCamera (GPIO) và TriggerWorker (queue → signal)."""
-        # 1. Hardware trigger thread
         self.thread_trigger_camera = TriggerCamera(
             self.trigger_queue, stop_event=self.stop_event, offset=3
         )
         self.thread_trigger_camera.start()
 
-        # 2. Worker lắng nghe queue, emit signal về UI thread
         self._trigger_worker = TriggerWorker(self.trigger_queue, self.stop_event, parent=self)
-        self._trigger_worker.triggered.connect(self._on_execute_trigger_clicked)   # ← kết nối
+        self._trigger_worker.triggered.connect(self._on_execute_trigger_clicked)
         self._trigger_worker.start()
 
     def _connect_signals(self):
@@ -97,23 +89,27 @@ class ProjectTab(QtWidgets.QWidget):
         self.btn_execute_trigger.clicked.connect(self._on_execute_trigger_clicked)
         self.btn_save_camera_config.clicked.connect(self._on_save_camera_config_clicked)
         self.list_project.selectionModel().selectionChanged.connect(self._on_project_selected)
-        
 
         self.width_img.editingFinished.connect(
-            lambda: self._read_and_fix_spinbox(self.width_img,  step=16, minimum=16,  maximum=2448))
+            lambda: self._fix_spinbox(self.width_img, "Width", fallback_min=16)
+        )
         self.height_img.editingFinished.connect(
-            lambda: self._read_and_fix_spinbox(self.height_img, step=4,  minimum=4,   maximum=2048))
+            lambda: self._fix_spinbox(self.height_img, "Height", fallback_min=4)
+        )
         self.offset_x.editingFinished.connect(
-            lambda: self._read_and_fix_spinbox(self.offset_x,   step=2,  minimum=0,   maximum=2448))
+            lambda: self._fix_spinbox(self.offset_x, "OffsetX", fallback_min=0)
+        )
         self.offset_y.editingFinished.connect(
-            lambda: self._read_and_fix_spinbox(self.offset_y,   step=2,  minimum=0,   maximum=2048))
-
-    # ------------------------------------------------------------------
-    # Camera enumeration
-    # ------------------------------------------------------------------
+            lambda: self._fix_spinbox(self.offset_y, "OffsetY", fallback_min=0)
+        )
 
     def _list_camera(self):
-        self._dev_list = mvsdk.CameraEnumerateDevice()
+        try:
+            self._dev_list = GenericCamera.enumerate_devices()
+        except Exception as e:
+            self._dev_list = []
+            print(f"List camera failed: {e}")
+
         self.devices_online.clear()
 
         if not self._dev_list:
@@ -123,14 +119,9 @@ class ProjectTab(QtWidgets.QWidget):
             return
 
         for dev_info in self._dev_list:
-            link_name = dev_info.acSn.decode() if isinstance(dev_info.acSn, bytes) else dev_info.acSn
-            self.devices_online.addItem(link_name)
+            self.devices_online.addItem(dev_info.device_id)
 
         self.devices_online.setCurrentIndex(0)
-
-    # ------------------------------------------------------------------
-    # Device selection
-    # ------------------------------------------------------------------
 
     def _on_device_selected(self, index: int):
         self._close_camera()
@@ -141,167 +132,136 @@ class ProjectTab(QtWidgets.QWidget):
             return
 
         self._current_dev_info = self._dev_list[index]
-        print(f"Selected camera: {self._current_dev_info.acSn}")
+        print(f"Selected camera: {self._current_dev_info.device_id}")
 
         success = self._open_camera(self._current_dev_info)
         self.btn_execute_trigger.setEnabled(success)
 
-    # ------------------------------------------------------------------
-    # Camera open / close
-    # ------------------------------------------------------------------
+    def _camera_config_path(self, project_name: str) -> str:
+        return os.path.join(
+            BASE_DIR,
+            "projects",
+            project_name,
+            "camera_config",
+            f"{GenericCamera.config_key(self._current_dev_info.device_id)}.json",
+        )
 
     def _open_camera(self, dev_info) -> bool:
         try:
-            self._hCamera = mvsdk.CameraInit(dev_info, -1, -1)
-        except mvsdk.CameraException as e:
-            QMessageBox.critical(self, "Lỗi camera", f"CameraInit Failed:\n{e.message}")
+            self._hCamera = GenericCamera(dev_info)
+        except Exception as e:
+            QMessageBox.critical(self, "Loi camera", f"CameraInit Failed:\n{e}")
             self._hCamera = None
             return False
-        
 
         project_name = self.text_name_project.text().strip()
-
-
         if self._hCamera is None or self._current_dev_info is None:
-            QMessageBox.warning(self, "Cảnh báo", "Chưa có camera nào được mở!")
-            return
+            QMessageBox.warning(self, "Canh bao", "Chua co camera nao duoc mo!")
+            return False
 
-        projects_root = os.path.join(BASE_DIR, "projects")
-        project_dir   = os.path.join(projects_root, project_name)
+        if project_name:
+            config = load_camera_config(self._camera_config_path(project_name))
+            if config is not None:
+                self._hCamera.apply_config(config)
 
-        link_name = self._current_dev_info.acSn
-        if isinstance(link_name, bytes):
-            link_name = link_name.decode()
+        self._camera_info = self._hCamera.get_camera_info()
+        offset_x, offset_y, width, height = self._hCamera.get_region()
+        self.width_img.setValue(width)
+        self.height_img.setValue(height)
+        self.offset_x.setValue(offset_x)
+        self.offset_y.setValue(offset_y)
+        self.exposure_time.setValue(int(self._hCamera.get_exposure_time()))
+        self._apply_spinbox_limits()
 
-        config_filename = f"{link_name}.config"
-        path_camera = os.path.join(project_dir, "camera_config", config_filename)
-        path_camera_default = os.path.join(BASE_DIR, "default.config")
-
-        if os.path.exists(path_camera):
-            mvsdk.CameraReadParameterFromFile(
-                self._hCamera,
-                path_camera
-            )       
-        elif os.path.exists(path_camera_default):       
-            mvsdk.CameraReadParameterFromFile(
-                self._hCamera,
-                path_camera_default
-            )
-
-
-        # Doc cau hinh camera tu file (neu co) sau khi mo camera thanh cong
-        img_size = mvsdk.CameraGetImageResolution(self._hCamera)
-        exposure_time = mvsdk.CameraGetExposureTime(self._hCamera)
-        self.width_img.setValue(img_size.iWidth)
-        self.height_img.setValue(img_size.iHeight)
-        self.offset_x.setValue(img_size.iHOffsetFOV)
-        self.offset_y.setValue(img_size.iVOffsetFOV)
-        self.exposure_time.setValue(int(exposure_time))
-
-        cap = mvsdk.CameraGetCapability(self._hCamera)
-        self._mono_camera = (cap.sIspCapacity.bMonoSensor != 0)
-
-        if self._mono_camera:
-            mvsdk.CameraSetIspOutFormat(self._hCamera, mvsdk.CAMERA_MEDIA_TYPE_MONO8)
-        else:
-            mvsdk.CameraSetIspOutFormat(self._hCamera, mvsdk.CAMERA_MEDIA_TYPE_BGR8)
-
-        mvsdk.CameraSetTriggerMode(self._hCamera, 1)
-
-        # img_size = mvsdk.CameraGetImageResolution(self._hCamera)
-        # img_size.iHOffsetFOV = 0
-        # img_size.iVOffsetFOV = 0
-        # img_size.iWidthFOV   = cap.sResolutionRange.iWidthMax
-        # img_size.iHeightFOV  = cap.sResolutionRange.iHeightMax
-        # img_size.iWidth      = cap.sResolutionRange.iWidthMax
-        # img_size.iHeight     = cap.sResolutionRange.iHeightMax
-        # mvsdk.CameraSetImageResolution(self._hCamera, img_size)
-
-        mvsdk.CameraPlay(self._hCamera)
-
-        frame_buffer_size = (
-            cap.sResolutionRange.iWidthMax
-            * cap.sResolutionRange.iHeightMax
-            * (1 if self._mono_camera else 3)
-        )
-        self._pFrameBuffer = mvsdk.CameraAlignMalloc(frame_buffer_size, 16)
-
-        print(f"Camera opened: {dev_info.acSn}")
+        self._hCamera.enable_software_trigger(self._camera_info)
+        self._hCamera.start_acquisition()
+        print(f"Camera opened: {dev_info.device_id}")
         return True
 
     def _close_camera(self):
         if self._hCamera is not None:
             try:
-                mvsdk.CameraUnInit(self._hCamera)
+                self._hCamera.close()
             except Exception:
                 pass
             self._hCamera = None
-
-        if self._pFrameBuffer is not None:
-            try:
-                mvsdk.CameraAlignFree(self._pFrameBuffer)
-            except Exception:
-                pass
-            self._pFrameBuffer = None
-
-    # ------------------------------------------------------------------
-    # Trigger & capture
-    # ------------------------------------------------------------------
+        self._camera_info = None
 
     @staticmethod
     def _snap_to_step(value: int, step: int, minimum: int, maximum: int) -> int:
         rounded = round(value / step) * step
         return max(minimum, min(maximum, rounded))
 
-    def _read_and_fix_spinbox(self, spinbox, step: int, minimum: int, maximum: int) -> int:
-        fixed = self._snap_to_step(spinbox.value(), step, minimum, maximum)
+    def _get_feature_meta(self, name: str, fallback_min: int = 0) -> dict:
+        if self._camera_info and name in self._camera_info:
+            meta = self._camera_info[name]
+            return {
+                "min": int(meta.get("min", fallback_min)),
+                "max": int(meta.get("max", fallback_min)),
+                "inc": max(1, int(meta.get("inc", 1))),
+            }
+        return {"min": fallback_min, "max": max(fallback_min, 1), "inc": 1}
+
+    def _apply_spinbox_limits(self):
+        width_meta = self._get_feature_meta("Width", fallback_min=16)
+        height_meta = self._get_feature_meta("Height", fallback_min=4)
+        offset_x_meta = self._get_feature_meta("OffsetX", fallback_min=0)
+        offset_y_meta = self._get_feature_meta("OffsetY", fallback_min=0)
+
+        self.width_img.setRange(width_meta["min"], width_meta["max"])
+        self.height_img.setRange(height_meta["min"], height_meta["max"])
+        self.offset_x.setRange(offset_x_meta["min"], offset_x_meta["max"])
+        self.offset_y.setRange(offset_y_meta["min"], offset_y_meta["max"])
+
+        self.width_img.setSingleStep(width_meta["inc"])
+        self.height_img.setSingleStep(height_meta["inc"])
+        self.offset_x.setSingleStep(offset_x_meta["inc"])
+        self.offset_y.setSingleStep(offset_y_meta["inc"])
+
+    def _fix_spinbox(self, spinbox, feature_name: str, fallback_min: int = 0) -> int:
+        meta = self._get_feature_meta(feature_name, fallback_min=fallback_min)
+        fixed = self._snap_to_step(spinbox.value(), meta["inc"], meta["min"], meta["max"])
         if fixed != spinbox.value():
             spinbox.setValue(fixed)
         return fixed
 
     def _get_img_params(self) -> tuple[int, int, int, int]:
-        w  = self._read_and_fix_spinbox(self.width_img,  step=16, minimum=16, maximum=2448)
-        h  = self._read_and_fix_spinbox(self.height_img, step=4,  minimum=4,  maximum=2048)
-        ox = self._read_and_fix_spinbox(self.offset_x,   step=2,  minimum=0,  maximum=2448 - w)
-        oy = self._read_and_fix_spinbox(self.offset_y,   step=2,  minimum=0,  maximum=2048 - h)
-        return w, h, ox, oy
+        width = self._fix_spinbox(self.width_img, "Width", fallback_min=16)
+        height = self._fix_spinbox(self.height_img, "Height", fallback_min=4)
+
+        ox_meta = self._get_feature_meta("OffsetX", fallback_min=0)
+        oy_meta = self._get_feature_meta("OffsetY", fallback_min=0)
+        width_meta = self._get_feature_meta("Width", fallback_min=16)
+        height_meta = self._get_feature_meta("Height", fallback_min=4)
+
+        max_offset_x = max(ox_meta["min"], width_meta["max"] - width)
+        max_offset_y = max(oy_meta["min"], height_meta["max"] - height)
+
+        offset_x = self._snap_to_step(self.offset_x.value(), ox_meta["inc"], ox_meta["min"], max_offset_x)
+        offset_y = self._snap_to_step(self.offset_y.value(), oy_meta["inc"], oy_meta["min"], max_offset_y)
+
+        if offset_x != self.offset_x.value():
+            self.offset_x.setValue(offset_x)
+        if offset_y != self.offset_y.value():
+            self.offset_y.setValue(offset_y)
+
+        return width, height, offset_x, offset_y
 
     def _on_execute_trigger_clicked(self):
-        """Chụp ảnh và hiển thị — luôn chạy trên UI thread (dù gọi từ button hay signal)."""
         if self._hCamera is None:
-            QMessageBox.warning(self, "Cảnh báo", "Chưa có camera nào được mở!")
+            QMessageBox.warning(self, "Canh bao", "Chua co camera nao duoc mo!")
             return
 
         width, height, offset_x, offset_y = self._get_img_params()
         exposure_time = self.exposure_time.value()
-        
+
         try:
-            mvsdk.CameraSetExposureTime(self._hCamera, exposure_time)
-            
-            img_size = mvsdk.CameraGetImageResolution(self._hCamera)
-            img_size.iHOffsetFOV = offset_x
-            img_size.iVOffsetFOV = offset_y
-            img_size.iWidthFOV   = width
-            img_size.iHeightFOV  = height
-            img_size.iWidth      = width
-            img_size.iHeight     = height
-            mvsdk.CameraSetImageResolution(self._hCamera, img_size)
-
-            mvsdk.CameraSoftTrigger(self._hCamera)
-
-            pRawData, FrameHead = mvsdk.CameraGetImageBuffer(self._hCamera, 2000)
-            mvsdk.CameraImageProcess(self._hCamera, pRawData, self._pFrameBuffer, FrameHead)
-            mvsdk.CameraReleaseImageBuffer(self._hCamera, pRawData)
-
-            if platform.system() == "Windows":
-                mvsdk.CameraFlipFrameBuffer(self._pFrameBuffer, FrameHead, 1)
-
-            frame_data = (mvsdk.c_ubyte * FrameHead.uBytes).from_address(self._pFrameBuffer)
-            frame = np.frombuffer(frame_data, dtype=np.uint8).reshape(
-                FrameHead.iHeight,
-                FrameHead.iWidth,
-                1 if self._mono_camera else 3,
-            )
+            self._hCamera.set_exposure_time(exposure_time)
+            self._hCamera.set_roi(offset_x, offset_y, width, height, self._camera_info)
+            self._hCamera.execute_software_trigger()
+            frame = self._hCamera.grab_frame(timeout_us=2_000_000, color_order="bgr")
+            if frame is None:
+                raise RuntimeError("Capture timeout")
 
             target_size = self.img_cam.size()
             if target_size.width() <= 0 or target_size.height() <= 0:
@@ -314,53 +274,45 @@ class ProjectTab(QtWidgets.QWidget):
                 Qt.TransformationMode.SmoothTransformation,
             )
             self.img_cam.setPixmap(scaled)
-
-        except mvsdk.CameraException as e:
-            QMessageBox.critical(self, "Lỗi chụp ảnh", f"Capture error:\n{e.message}")
-
-    # ------------------------------------------------------------------
-    # Save camera config
-    # ------------------------------------------------------------------
+        except Exception as e:
+            QMessageBox.critical(self, "Loi chup anh", f"Capture error:\n{e}")
 
     def _on_save_camera_config_clicked(self):
         project_name = self.text_name_project.text().strip()
 
         if not project_name:
-            QMessageBox.warning(self, "Cảnh báo", "Vui lòng nhập tên project!")
+            QMessageBox.warning(self, "Canh bao", "Vui long nhap ten project!")
             self.text_name_project.setFocus()
             return
 
         invalid_chars = r'\/:*?"<>|'
         if any(ch in project_name for ch in invalid_chars):
-            QMessageBox.warning(self, "Cảnh báo",
-                                f"Tên project không được chứa các ký tự: {invalid_chars}")
+            QMessageBox.warning(
+                self,
+                "Canh bao",
+                f"Ten project khong duoc chua cac ky tu: {invalid_chars}",
+            )
             return
 
         if self._hCamera is None or self._current_dev_info is None:
-            QMessageBox.warning(self, "Cảnh báo", "Chưa có camera nào được mở!")
+            QMessageBox.warning(self, "Canh bao", "Chua co camera nao duoc mo!")
             return
 
-        projects_root = os.path.join(BASE_DIR, "projects")
-        project_dir   = os.path.join(projects_root, project_name)
+        width, height, offset_x, offset_y = self._get_img_params()
+        self._hCamera.set_exposure_time(self.exposure_time.value())
+        self._hCamera.set_roi(offset_x, offset_y, width, height, self._camera_info)
 
-        link_name = self._current_dev_info.acSn
-        if isinstance(link_name, bytes):
-            link_name = link_name.decode()
-
-        config_filename = f"{link_name}.config"
-        path = os.path.join(project_dir, "camera_config", config_filename)
-
+        path = self._camera_config_path(project_name)
+        config = self._hCamera.export_config()
         try:
-            mvsdk.CameraSaveParameterToFile(self._hCamera, path)
-            QMessageBox.information(self, "Thành công",
-                                    f"Đã lưu cấu hình camera ra file:\n{config_filename}")
-        except mvsdk.CameraException as e:
-            QMessageBox.critical(self, "Lỗi", f"Không thể lưu cấu hình:\n{e.message}")
-
-
-    # ------------------------------------------------------------------
-    # Project list
-    # ------------------------------------------------------------------
+            save_camera_config(path, config)
+            QMessageBox.information(
+                self,
+                "Thanh cong",
+                f"Da luu cau hinh camera ra file:\n{os.path.basename(path)}",
+            )
+        except Exception as e:
+            QMessageBox.critical(self, "Loi", f"Khong the luu cau hinh:\n{e}")
 
     def _setup_project_list(self):
         self._project_list_model = QStringListModel()
@@ -385,10 +337,6 @@ class ProjectTab(QtWidgets.QWidget):
         name = self._project_list_model.data(indexes[0])
         self.text_name_project.setText(name)
 
-    # ------------------------------------------------------------------
-    # Project management
-    # ------------------------------------------------------------------
-
     def _on_add_project_clicked(self):
         self.text_name_project.setEnabled(True)
         self.btn_create_project.setEnabled(True)
@@ -399,32 +347,37 @@ class ProjectTab(QtWidgets.QWidget):
         project_name = self.text_name_project.text().strip()
 
         if not project_name:
-            QMessageBox.warning(self, "Cảnh báo", "Vui lòng nhập tên project!")
+            QMessageBox.warning(self, "Canh bao", "Vui long nhap ten project!")
             self.text_name_project.setFocus()
             return
 
         invalid_chars = r'\/:*?"<>|'
         if any(ch in project_name for ch in invalid_chars):
-            QMessageBox.warning(self, "Cảnh báo",
-                                f"Tên project không được chứa các ký tự: {invalid_chars}")
+            QMessageBox.warning(
+                self,
+                "Canh bao",
+                f"Ten project khong duoc chua cac ky tu: {invalid_chars}",
+            )
             return
 
         projects_root = os.path.join(BASE_DIR, "projects")
-        project_dir   = os.path.join(projects_root, project_name)
+        project_dir = os.path.join(projects_root, project_name)
 
         if os.path.exists(project_dir):
-            QMessageBox.warning(self, "Cảnh báo", f"Project '{project_name}' đã tồn tại!")
+            QMessageBox.warning(self, "Canh bao", f"Project '{project_name}' da ton tai!")
             return
 
         try:
             self._create_project_structure(project_dir, project_name)
-            QMessageBox.information(self, "Thành công",
-                                    f"Project '{project_name}' đã được tạo thành công!\n"
-                                    f"Đường dẫn: {project_dir}")
+            QMessageBox.information(
+                self,
+                "Thanh cong",
+                f"Project '{project_name}' da duoc tao thanh cong!\nDuong dan: {project_dir}",
+            )
             self._setup_initial_state()
             self._refresh_project_list()
         except Exception as e:
-            QMessageBox.critical(self, "Lỗi", f"Không thể tạo project:\n{str(e)}")
+            QMessageBox.critical(self, "Loi", f"Khong the tao project:\n{str(e)}")
 
     def _create_project_structure(self, project_dir: str, project_name: str):
         sub_dirs = ["camera_config", "goods", "template_level", "memory_bank"]
@@ -434,15 +387,15 @@ class ProjectTab(QtWidgets.QWidget):
 
         project_info = {
             "project_name": project_name,
-            "created_at":   self._get_current_timestamp(),
-            "description":  "",
+            "created_at": self._get_current_timestamp(),
+            "description": "",
             "camera_config": {"cameras": []},
             "settings": {
-                "goods_dir":        "goods",
-                "memory_bank_dir":  "memory_bank",
-                "camera_config_dir":"camera_config",
-                "threshold":        None,
-                "ratio_liquid":     None,
+                "goods_dir": "goods",
+                "memory_bank_dir": "memory_bank",
+                "camera_config_dir": "camera_config",
+                "threshold": None,
+                "ratio_liquid": None,
             },
         }
 
@@ -454,35 +407,33 @@ class ProjectTab(QtWidgets.QWidget):
         project_name = self.text_name_project.text().strip()
 
         if not project_name:
-            QMessageBox.warning(self, "Cảnh báo", "Chưa có project nào được chọn!")
+            QMessageBox.warning(self, "Canh bao", "Chua co project nao duoc chon!")
             return
 
         projects_root = os.path.join(BASE_DIR, "projects")
-        project_dir   = os.path.join(projects_root, project_name)
+        project_dir = os.path.join(projects_root, project_name)
 
         if not os.path.exists(project_dir):
             self._refresh_project_list()
             return
 
         reply = QMessageBox.question(
-            self, "Xác nhận xóa",
-            f"Bạn có chắc muốn xóa project '{project_name}'?",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            self,
+            "Xac nhan xoa",
+            f"Ban co chac muon xoa project '{project_name}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
         if reply != QMessageBox.StandardButton.Yes:
             return
 
         try:
             import shutil
+
             shutil.rmtree(project_dir)
             self.text_name_project.clear()
             self._refresh_project_list()
         except Exception as e:
-            QMessageBox.critical(self, "Lỗi", f"Không thể xóa project:\n{str(e)}")
-
-    # ------------------------------------------------------------------
-    # Cleanup
-    # ------------------------------------------------------------------
+            QMessageBox.critical(self, "Loi", f"Khong the xoa project:\n{str(e)}")
 
     def closeEvent(self, event):
         self.stop_all_threads()
@@ -499,11 +450,8 @@ class ProjectTab(QtWidgets.QWidget):
 
         self._close_camera()
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
-
     @staticmethod
     def _get_current_timestamp() -> str:
         from datetime import datetime
+
         return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
