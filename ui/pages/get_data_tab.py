@@ -623,3 +623,83 @@ class GetDataManager(threading.Thread):
 
 
     
+class GetDataManager(threading.Thread):
+    def __init__(self, project_root: Path):
+        super().__init__(daemon=True, name="GetDataManager")
+        self.project_root = project_root
+        self.frames_queue = queue.Queue(maxsize=1)
+        self._stop_event = threading.Event()
+        self.is_saving = False
+        self.save_dir = None
+        self._trigger_count = 0
+        self.camera_positions = []
+
+    def set_save_dir(self, path: str):
+        self.save_dir = path
+        self._trigger_count = self._scan_last_index(path)
+        if self._trigger_count > 0:
+            print(f"[GetDataManager] Resume trigger_{self._trigger_count:04d}")
+        else:
+            print("[GetDataManager] Start from 0001")
+
+    def _load_project_info(self) -> dict | None:
+        json_path = self.project_root / PROJECT_INFO_FILENAME
+        if not json_path.exists():
+            print(f"[GetDataManager] Missing {json_path}")
+            return None
+        with open(json_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    @staticmethod
+    def _scan_last_index(directory: str) -> int:
+        if not os.path.isdir(directory):
+            return 0
+        pattern = re.compile(r"^(?:[a-z0-9_-]+_)?cam\d+_(\d+)\.jpg$", re.IGNORECASE)
+        max_index = 0
+        for fname in os.listdir(directory):
+            m = pattern.match(fname)
+            if m:
+                max_index = max(max_index, int(m.group(1)))
+        return max_index
+
+    def stop(self):
+        self._stop_event.set()
+
+    def run(self):
+        thread_camera = None
+        try:
+            infor_project = self._load_project_info()
+            thread_camera = BatchCamera(self.frames_queue, self._stop_event, infor_project)
+            self.camera_positions = thread_camera.get_camera_positions()
+            thread_camera.start()
+            print("[GetDataManager] Camera started.")
+            while not self._stop_event.is_set():
+                try:
+                    _, frames = self.frames_queue.get(timeout=1)
+                except queue.Empty:
+                    continue
+                if self.is_saving and self.save_dir:
+                    self._save_trigger(frames)
+        except Exception as e:
+            print(f"[GetDataManager] Error: {e}")
+        finally:
+            if thread_camera:
+                thread_camera.join()
+            print("[GetDataManager] Stopped.")
+
+    def _save_trigger(self, frames: list):
+        self._trigger_count += 1
+        for cam_id, frame in enumerate(frames):
+            if frame is None:
+                continue
+            fname = f"{self._camera_position_prefix(cam_id)}_cam{cam_id+1}_{self._trigger_count:04d}.jpg"
+            path = os.path.join(self.save_dir, fname)
+            cv2.imwrite(path, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+        print(f"[GetDataManager] Saved trigger_{self._trigger_count:04d}")
+
+    def _camera_position_prefix(self, cam_id: int) -> str:
+        if cam_id < len(self.camera_positions):
+            position = str(self.camera_positions[cam_id]).strip()
+            if position:
+                return re.sub(r"[^a-z0-9_-]+", "_", position.lower())
+        return f"cam{cam_id+1}"

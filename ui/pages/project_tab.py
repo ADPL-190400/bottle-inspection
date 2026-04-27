@@ -55,6 +55,7 @@ class ProjectTab(QtWidgets.QWidget):
         self._current_dev_info = None
         self._hCamera = None
         self._camera_info = None
+        self._default_exposure_time = self.exposure_time.value()
         self._last_preview_frame = None
         self._preview_pixmap = None
         self._preview_scale = None
@@ -97,6 +98,7 @@ class ProjectTab(QtWidgets.QWidget):
         self.devices_online.currentIndexChanged.connect(self._on_device_selected)
         self.btn_execute_trigger.clicked.connect(self._on_execute_trigger_clicked)
         self.btn_save_camera_config.clicked.connect(self._on_save_camera_config_clicked)
+        self.btn_reset_conf_cam.clicked.connect(self._on_reset_conf_cam_clicked)
         self.list_project.selectionModel().selectionChanged.connect(self._on_project_selected)
 
         self.width_img.editingFinished.connect(
@@ -170,22 +172,15 @@ class ProjectTab(QtWidgets.QWidget):
             QMessageBox.warning(self, "Canh bao", "Chua co camera nao duoc mo!")
             return False
 
+        config = None
         if project_name:
             config = load_camera_config(self._camera_config_path(project_name))
             if config is not None:
                 self._hCamera.apply_config(config)
 
         self._camera_info = self._hCamera.get_camera_info()
-        offset_x, offset_y, width, height = self._hCamera.get_region()
-        self.width_img.setValue(width)
-        self.height_img.setValue(height)
-        self.offset_x.setValue(offset_x)
-        self.offset_y.setValue(offset_y)
-        self.exposure_time.setValue(int(self._hCamera.get_exposure_time()))
-        flip_x, flip_y = self._hCamera.get_flip()
-        self.radio_flip_x.setChecked(flip_x)
-        self.radio_flip_y.setChecked(flip_y)
         self._apply_spinbox_limits()
+        self._load_camera_controls(config if project_name else None)
 
         self._hCamera.enable_software_trigger(self._camera_info)
         self._hCamera.start_acquisition()
@@ -206,6 +201,38 @@ class ProjectTab(QtWidgets.QWidget):
         self._roi_drag_active = False
         self._roi_drag_start = None
         self._roi_drag_end = None
+
+    def _default_camera_position(self) -> str:
+        return self.camera_position.itemText(0) if self.camera_position.count() > 0 else "Body"
+
+    def _reset_camera_controls(self):
+        width_meta = self._get_feature_meta("Width", fallback_min=16)
+        height_meta = self._get_feature_meta("Height", fallback_min=4)
+        self.width_img.setValue(width_meta["max"])
+        self.height_img.setValue(height_meta["max"])
+        self.offset_x.setValue(0)
+        self.offset_y.setValue(0)
+        self.exposure_time.setValue(self._default_exposure_time)
+        self.radio_flip_x.setChecked(False)
+        self.radio_flip_y.setChecked(False)
+        self.camera_position.setCurrentText(self._default_camera_position())
+
+    def _load_camera_controls(self, config: dict | None):
+        if config is None:
+            self._reset_camera_controls()
+        else:
+            offset_x, offset_y, width, height = self._hCamera.get_region()
+            self.width_img.setValue(width)
+            self.height_img.setValue(height)
+            self.offset_x.setValue(offset_x)
+            self.offset_y.setValue(offset_y)
+            flip_x, flip_y = self._hCamera.get_flip()
+            self.radio_flip_x.setChecked(flip_x)
+            self.radio_flip_y.setChecked(flip_y)
+            self.camera_position.setCurrentText(
+                str(config.get("camera_position", self._default_camera_position()))
+            )
+        self.exposure_time.setValue(int(self._hCamera.get_exposure_time()))
 
     @staticmethod
     def _snap_to_step(value: int, step: int, minimum: int, maximum: int) -> int:
@@ -344,6 +371,7 @@ class ProjectTab(QtWidgets.QWidget):
 
         path = self._camera_config_path(project_name)
         config = self._hCamera.export_config()
+        config["camera_position"] = self.camera_position.currentText().strip() or self._default_camera_position()
         try:
             save_camera_config(path, config)
             QMessageBox.information(
@@ -353,6 +381,23 @@ class ProjectTab(QtWidgets.QWidget):
             )
         except Exception as e:
             QMessageBox.critical(self, "Loi", f"Khong the luu cau hinh:\n{e}")
+
+    def _on_reset_conf_cam_clicked(self):
+        if self._hCamera is None:
+            QMessageBox.warning(self, "Canh bao", "Chua co camera nao duoc mo!")
+            return
+
+        self._reset_camera_controls()
+        width, height, offset_x, offset_y = self._get_img_params()
+        try:
+            self._hCamera.set_roi(offset_x, offset_y, width, height, self._camera_info)
+            self._hCamera.set_flip(False, False)
+            self._last_preview_frame = None
+            self._preview_pixmap = None
+            self.img_cam.clear()
+            self.img_cam.setText("Camera Preview")
+        except Exception as e:
+            QMessageBox.critical(self, "Loi", f"Khong the reset config:\n{e}")
 
     def _setup_project_list(self):
         self._project_list_model = QStringListModel()

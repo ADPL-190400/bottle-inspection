@@ -12,6 +12,7 @@ class BatchCamera(threading.Thread):
     def __init__(self, output_queue, stop_event, infor_project):
         super().__init__()
         self.cameras = []
+        self.camera_positions = []
         self.output_queue = output_queue
         self.stop_event = stop_event
         self.infor_project = infor_project or {}
@@ -43,9 +44,11 @@ class BatchCamera(threading.Thread):
                 if config is not None:
                     print("config file camera", config_path)
                     camera.apply_config(config)
+                position = str((config or {}).get("camera_position", f"cam{len(self.cameras) + 1}"))
                 camera.enable_software_trigger()
                 camera.start_acquisition()
                 self.cameras.append(camera)
+                self.camera_positions.append(position)
             except Exception as e:
                 print("CameraInit Failed:", e)
 
@@ -99,3 +102,6 @@ class BatchCamera(threading.Thread):
             cam.close()
 
         self.thread_trigger_camera.stop_event.set()
+
+    def get_camera_positions(self):
+        return list(self.camera_positions)
