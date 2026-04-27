@@ -1,6 +1,7 @@
 # coding=utf-8
 from PyQt6 import QtWidgets, uic
-from PyQt6.QtCore import QThread, QStringListModel, Qt, pyqtSignal
+from PyQt6.QtCore import QEvent, QPoint, QRect, QThread, QStringListModel, Qt, pyqtSignal
+from PyQt6.QtGui import QColor, QPainter, QPen, QPixmap
 from PyQt6.QtWidgets import QMessageBox
 import json
 import os
@@ -54,6 +55,12 @@ class ProjectTab(QtWidgets.QWidget):
         self._current_dev_info = None
         self._hCamera = None
         self._camera_info = None
+        self._last_preview_frame = None
+        self._preview_pixmap = None
+        self._preview_scale = None
+        self._roi_drag_active = False
+        self._roi_drag_start = None
+        self._roi_drag_end = None
 
         self.stop_event = threading.Event()
         self.trigger_queue = queue.Queue(maxsize=1)
@@ -63,6 +70,8 @@ class ProjectTab(QtWidgets.QWidget):
         self._setup_initial_state()
         self._setup_project_list()
         self._connect_signals()
+        self.img_cam.installEventFilter(self)
+        self.img_cam.setMouseTracking(True)
         self._list_camera()
         self._init_trigger_camera()
 
@@ -102,6 +111,8 @@ class ProjectTab(QtWidgets.QWidget):
         self.offset_y.editingFinished.connect(
             lambda: self._fix_spinbox(self.offset_y, "OffsetY", fallback_min=0)
         )
+        self.radio_flip_x.toggled.connect(self._on_flip_changed)
+        self.radio_flip_y.toggled.connect(self._on_flip_changed)
 
     def _list_camera(self):
         try:
@@ -171,6 +182,9 @@ class ProjectTab(QtWidgets.QWidget):
         self.offset_x.setValue(offset_x)
         self.offset_y.setValue(offset_y)
         self.exposure_time.setValue(int(self._hCamera.get_exposure_time()))
+        flip_x, flip_y = self._hCamera.get_flip()
+        self.radio_flip_x.setChecked(flip_x)
+        self.radio_flip_y.setChecked(flip_y)
         self._apply_spinbox_limits()
 
         self._hCamera.enable_software_trigger(self._camera_info)
@@ -186,6 +200,12 @@ class ProjectTab(QtWidgets.QWidget):
                 pass
             self._hCamera = None
         self._camera_info = None
+        self._last_preview_frame = None
+        self._preview_pixmap = None
+        self._preview_scale = None
+        self._roi_drag_active = False
+        self._roi_drag_start = None
+        self._roi_drag_end = None
 
     @staticmethod
     def _snap_to_step(value: int, step: int, minimum: int, maximum: int) -> int:
@@ -247,6 +267,33 @@ class ProjectTab(QtWidgets.QWidget):
 
         return width, height, offset_x, offset_y
 
+    def _normalize_feature_value(self, value: int, feature_name: str, fallback_min: int = 0) -> int:
+        meta = self._get_feature_meta(feature_name, fallback_min=fallback_min)
+        return self._snap_to_step(value, meta["inc"], meta["min"], meta["max"])
+
+    def _apply_roi_to_spinboxes(self, offset_x: int, offset_y: int, width: int, height: int):
+        width = self._normalize_feature_value(width, "Width", fallback_min=16)
+        height = self._normalize_feature_value(height, "Height", fallback_min=4)
+
+        width_meta = self._get_feature_meta("Width", fallback_min=16)
+        height_meta = self._get_feature_meta("Height", fallback_min=4)
+        ox_meta = self._get_feature_meta("OffsetX", fallback_min=0)
+        oy_meta = self._get_feature_meta("OffsetY", fallback_min=0)
+
+        offset_x = self._snap_to_step(offset_x, ox_meta["inc"], ox_meta["min"], width_meta["max"] - width)
+        offset_y = self._snap_to_step(offset_y, oy_meta["inc"], oy_meta["min"], height_meta["max"] - height)
+
+        self.width_img.setValue(width)
+        self.height_img.setValue(height)
+        self.offset_x.setValue(offset_x)
+        self.offset_y.setValue(offset_y)
+
+    def _on_flip_changed(self):
+        if self._hCamera is not None:
+            self._hCamera.set_flip(self.radio_flip_x.isChecked(), self.radio_flip_y.isChecked())
+            if self._last_preview_frame is not None:
+                self._update_preview(self._last_preview_frame)
+
     def _on_execute_trigger_clicked(self):
         if self._hCamera is None:
             QMessageBox.warning(self, "Canh bao", "Chua co camera nao duoc mo!")
@@ -258,22 +305,14 @@ class ProjectTab(QtWidgets.QWidget):
         try:
             self._hCamera.set_exposure_time(exposure_time)
             self._hCamera.set_roi(offset_x, offset_y, width, height, self._camera_info)
+            self._hCamera.set_flip(self.radio_flip_x.isChecked(), self.radio_flip_y.isChecked())
             self._hCamera.execute_software_trigger()
             frame = self._hCamera.grab_frame(timeout_us=2_000_000, color_order="bgr")
             if frame is None:
                 raise RuntimeError("Capture timeout")
 
-            target_size = self.img_cam.size()
-            if target_size.width() <= 0 or target_size.height() <= 0:
-                return
-
-            qt_image = convert_cv_qt(frame)
-            scaled = qt_image.scaled(
-                target_size,
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
-            )
-            self.img_cam.setPixmap(scaled)
+            self._last_preview_frame = frame.copy()
+            self._update_preview(self._last_preview_frame)
         except Exception as e:
             QMessageBox.critical(self, "Loi chup anh", f"Capture error:\n{e}")
 
@@ -301,6 +340,7 @@ class ProjectTab(QtWidgets.QWidget):
         width, height, offset_x, offset_y = self._get_img_params()
         self._hCamera.set_exposure_time(self.exposure_time.value())
         self._hCamera.set_roi(offset_x, offset_y, width, height, self._camera_info)
+        self._hCamera.set_flip(self.radio_flip_x.isChecked(), self.radio_flip_y.isChecked())
 
         path = self._camera_config_path(project_name)
         config = self._hCamera.export_config()
@@ -449,6 +489,142 @@ class ProjectTab(QtWidgets.QWidget):
             self.thread_trigger_camera.join(timeout=2)
 
         self._close_camera()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if self._last_preview_frame is not None:
+            self._update_preview(self._last_preview_frame)
+
+    def eventFilter(self, watched, event):
+        if watched is self.img_cam:
+            if event.type() == QEvent.Type.MouseButtonPress and event.button() == Qt.MouseButton.LeftButton:
+                if self._preview_scale is None:
+                    return False
+                point = event.position().toPoint() if hasattr(event, "position") else event.pos()
+                if not self._point_inside_preview(point):
+                    return False
+                self._roi_drag_active = True
+                self._roi_drag_start = point
+                self._roi_drag_end = point
+                self._update_preview(self._last_preview_frame)
+                return True
+
+            if event.type() == QEvent.Type.MouseMove and self._roi_drag_active:
+                point = event.position().toPoint() if hasattr(event, "position") else event.pos()
+                self._roi_drag_end = self._clamp_point_to_preview(point)
+                self._update_preview(self._last_preview_frame)
+                return True
+
+            if event.type() == QEvent.Type.MouseButtonRelease and self._roi_drag_active:
+                point = event.position().toPoint() if hasattr(event, "position") else event.pos()
+                self._roi_drag_end = self._clamp_point_to_preview(point)
+                self._roi_drag_active = False
+                self._apply_drag_roi()
+                self._update_preview(self._last_preview_frame)
+                return True
+
+        return super().eventFilter(watched, event)
+
+    def _point_inside_preview(self, point: QPoint) -> bool:
+        if self._preview_scale is None:
+            return False
+        x0, y0, w, h = self._preview_scale
+        return x0 <= point.x() <= x0 + w and y0 <= point.y() <= y0 + h
+
+    def _clamp_point_to_preview(self, point: QPoint) -> QPoint:
+        if self._preview_scale is None:
+            return point
+        x0, y0, w, h = self._preview_scale
+        x = min(max(point.x(), x0), x0 + w)
+        y = min(max(point.y(), y0), y0 + h)
+        return QPoint(x, y)
+
+    def _widget_point_to_image_point(self, point: QPoint) -> tuple[int, int]:
+        x0, y0, w_disp, h_disp = self._preview_scale
+        frame_h, frame_w = self._last_preview_frame.shape[:2]
+        rel_x = (point.x() - x0) / max(1, w_disp)
+        rel_y = (point.y() - y0) / max(1, h_disp)
+        img_x = int(round(rel_x * frame_w))
+        img_y = int(round(rel_y * frame_h))
+        img_x = min(max(img_x, 0), frame_w - 1)
+        img_y = min(max(img_y, 0), frame_h - 1)
+        return img_x, img_y
+
+    def _apply_drag_roi(self):
+        if self._last_preview_frame is None or self._roi_drag_start is None or self._roi_drag_end is None:
+            return
+
+        x1, y1 = self._widget_point_to_image_point(self._roi_drag_start)
+        x2, y2 = self._widget_point_to_image_point(self._roi_drag_end)
+        left, right = sorted((x1, x2))
+        top, bottom = sorted((y1, y2))
+
+        current_width = self.width_img.value()
+        current_height = self.height_img.value()
+        current_offset_x = self.offset_x.value()
+        current_offset_y = self.offset_y.value()
+        flip_x = self.radio_flip_x.isChecked()
+        flip_y = self.radio_flip_y.isChecked()
+
+        if flip_y:
+            sensor_left = current_width - 1 - right
+            sensor_right = current_width - 1 - left
+        else:
+            sensor_left = left
+            sensor_right = right
+
+        if flip_x:
+            sensor_top = current_height - 1 - bottom
+            sensor_bottom = current_height - 1 - top
+        else:
+            sensor_top = top
+            sensor_bottom = bottom
+
+        width = max(1, sensor_right - sensor_left + 1)
+        height = max(1, sensor_bottom - sensor_top + 1)
+        offset_x = current_offset_x + sensor_left
+        offset_y = current_offset_y + sensor_top
+        self._apply_roi_to_spinboxes(offset_x, offset_y, width, height)
+
+    def _draw_selection_overlay(self, pixmap: QPixmap) -> QPixmap:
+        if self._roi_drag_start is None or self._roi_drag_end is None:
+            return pixmap
+
+        overlay = QPixmap(pixmap)
+        x0, y0, _, _ = self._preview_scale
+        start = self._roi_drag_start - QPoint(x0, y0)
+        end = self._roi_drag_end - QPoint(x0, y0)
+        painter = QPainter(overlay)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QPen(QColor(0, 255, 0), 2))
+        painter.drawRect(QRect(start, end).normalized())
+        painter.end()
+        return overlay
+
+    def _update_preview(self, frame):
+        if frame is None:
+            return
+
+        target_size = self.img_cam.size()
+        if target_size.width() <= 0 or target_size.height() <= 0:
+            return
+
+        qt_image = convert_cv_qt(frame)
+        scaled = qt_image.scaled(
+            target_size,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+
+        x0 = (target_size.width() - scaled.width()) // 2
+        y0 = (target_size.height() - scaled.height()) // 2
+        self._preview_scale = (x0, y0, scaled.width(), scaled.height())
+        self._preview_pixmap = scaled
+
+        if self._roi_drag_active and self._roi_drag_start is not None and self._roi_drag_end is not None:
+            scaled = self._draw_selection_overlay(scaled)
+
+        self.img_cam.setPixmap(scaled)
 
     @staticmethod
     def _get_current_timestamp() -> str:

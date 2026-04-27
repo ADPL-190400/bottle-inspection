@@ -51,6 +51,8 @@ class GenericCamera:
         self._stream = None
         self._buffer_count = buffer_count
         self._pixel_format = self.get_pixel_format()
+        self._flip_x = False
+        self._flip_y = False
 
     @staticmethod
     def _ensure_backend():
@@ -285,6 +287,10 @@ class GenericCamera:
 
         if frame_bgr is None:
             return None
+        if self._flip_x:
+            frame_bgr = cv2.flip(frame_bgr, 0)
+        if self._flip_y:
+            frame_bgr = cv2.flip(frame_bgr, 1)
         if color_order.lower() == "rgb":
             return cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
         return frame_bgr
@@ -301,6 +307,8 @@ class GenericCamera:
                 "height": height,
             },
             "pixel_format": self.get_pixel_format_as_string(),
+            "flip_x": self._flip_x,
+            "flip_y": self._flip_y,
         }
 
     def apply_config(self, config: dict):
@@ -317,7 +325,18 @@ class GenericCamera:
                 int(roi.get("height", self.get_camera_info()["Height"]["current"])),
             )
 
+        self.set_flip(
+            bool(config.get("flip_x", False)),
+            bool(config.get("flip_y", False)),
+        )
         self._pixel_format = self.get_pixel_format()
+
+    def set_flip(self, flip_x: bool = False, flip_y: bool = False):
+        self._flip_x = bool(flip_x)
+        self._flip_y = bool(flip_y)
+
+    def get_flip(self) -> tuple[bool, bool]:
+        return self._flip_x, self._flip_y
 
 
 def load_camera_config(path: str) -> dict | None:
