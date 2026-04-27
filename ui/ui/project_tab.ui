@@ -470,9 +470,6 @@ QPushButton#btn_delete_project:pressed { background-color: #840000; }
       <string>CONFIG CAMERA</string>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_8">
-      <property name="spacing">
-       <number>10</number>
-      </property>
       <item>
        <widget class="QLabel" name="label_2">
         <property name="font">
@@ -494,6 +491,39 @@ QPushButton#btn_delete_project:pressed { background-color: #840000; }
           <pointsize>12</pointsize>
          </font>
         </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_3">
+        <property name="font">
+         <font>
+          <family>Segoe UI,Arial,sans-serif</family>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Position</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="camera_position">
+        <property name="font">
+         <font>
+          <family>Segoe UI,Arial,sans-serif</family>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
+        <item>
+         <property name="text">
+          <string>Body</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Cap</string>
+         </property>
+        </item>
        </widget>
       </item>
       <item>
@@ -521,8 +551,8 @@ QPushButton#btn_delete_project:pressed { background-color: #840000; }
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>329</width>
-           <height>431</height>
+           <width>252</width>
+           <height>70</height>
           </rect>
          </property>
          <attribute name="label">
@@ -592,7 +622,7 @@ QPushButton#btn_delete_project:pressed { background-color: #840000; }
            <x>0</x>
            <y>0</y>
            <width>329</width>
-           <height>431</height>
+           <height>399</height>
           </rect>
          </property>
          <attribute name="label">
@@ -884,6 +914,13 @@ QPushButton#btn_delete_project:pressed { background-color: #840000; }
            </layout>
           </item>
           <item>
+           <widget class="QPushButton" name="btn_reset_conf_cam">
+            <property name="text">
+             <string>Reset</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <spacer>
             <property name="orientation">
              <enum>Qt::Vertical</enum>
@@ -903,8 +940,8 @@ QPushButton#btn_delete_project:pressed { background-color: #840000; }
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>329</width>
-           <height>431</height>
+           <width>250</width>
+           <height>136</height>
           </rect>
          </property>
          <attribute name="label">
