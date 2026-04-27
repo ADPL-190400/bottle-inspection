@@ -2,6 +2,7 @@ import threading
 import queue
 import os
 import time
+import json
 import torch
 import numpy as np
 from pathlib import Path
@@ -17,10 +18,13 @@ except ImportError:
     HAS_TRT = False
 
 U2NET_ENGINE_PATH = os.path.join(BASE_DIR, "models/remove_bg/u2netp.trt")
-BANK_CACHE_PATH   = "memory_bank/memory_bank.pt"
 TRT_ENGINE_PATH   = "models/backbone/backbone_224x224.pth"
 STD_W, STD_H      = 224, 224
 FEAT_H = FEAT_W   = 28
+POSITION_BANK_FILENAMES = {
+    "body": "body_memory_bank.pt",
+    "cap": "cap_memory_bank.pt",
+}
 
 device   = torch.device("cuda")
 dtype    = torch.float16

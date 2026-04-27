@@ -551,8 +551,8 @@ QPushButton#btn_delete_project:pressed { background-color: #840000; }
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>252</width>
-           <height>70</height>
+           <width>329</width>
+           <height>384</height>
           </rect>
          </property>
          <attribute name="label">
@@ -622,7 +622,7 @@ QPushButton#btn_delete_project:pressed { background-color: #840000; }
            <x>0</x>
            <y>0</y>
            <width>329</width>
-           <height>399</height>
+           <height>384</height>
           </rect>
          </property>
          <attribute name="label">
@@ -914,13 +914,6 @@ QPushButton#btn_delete_project:pressed { background-color: #840000; }
            </layout>
           </item>
           <item>
-           <widget class="QPushButton" name="btn_reset_conf_cam">
-            <property name="text">
-             <string>Reset</string>
-            </property>
-           </widget>
-          </item>
-          <item>
            <spacer>
             <property name="orientation">
              <enum>Qt::Vertical</enum>
@@ -940,8 +933,8 @@ QPushButton#btn_delete_project:pressed { background-color: #840000; }
           <rect>
            <x>0</x>
            <y>0</y>
-           <width>250</width>
-           <height>136</height>
+           <width>329</width>
+           <height>384</height>
           </rect>
          </property>
          <attribute name="label">
@@ -1050,6 +1043,13 @@ QPushButton#btn_delete_project:pressed { background-color: #840000; }
          </size>
         </property>
        </spacer>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btn_reset_conf_cam">
+        <property name="text">
+         <string>Reset</string>
+        </property>
+       </widget>
       </item>
       <item>
        <widget class="QPushButton" name="btn_save_camera_config">

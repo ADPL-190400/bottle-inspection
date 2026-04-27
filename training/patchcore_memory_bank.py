@@ -638,3 +638,143 @@ def build_bank(goods_dir: Path,
     )
 
     return bank_on_device
+
+
+POSITION_BANK_FILENAMES = {
+    "body": "body_memory_bank.pt",
+    "cap": "cap_memory_bank.pt",
+}
+
+
+def _save_threshold_to_json(project_root: Path, threshold: float, model_name: str = "body"):
+    json_path = project_root / PROJECT_INFO_FILENAME
+    if not json_path.exists():
+        print(f"[BuildBank] Missing {json_path}, skip save threshold.")
+        return
+    with open(json_path, "r", encoding="utf-8") as f:
+        info = json.load(f)
+    settings = info.setdefault("settings", {})
+    settings.setdefault("thresholds", {})[model_name] = round(float(threshold), 2)
+    if model_name == "body":
+        settings["threshold"] = round(float(threshold), 2)
+    with open(json_path, "w", encoding="utf-8") as f:
+        json.dump(info, f, indent=4, ensure_ascii=False)
+    print(f"[BuildBank] Saved threshold[{model_name}]={threshold:.4f}")
+
+
+def auto_threshold(bank: torch.Tensor,
+                   val_files: list,
+                   model_engine,
+                   project_root: Path,
+                   n_sigma: float = 3.0,
+                   model_name: str = "body") -> float:
+    if not val_files:
+        raise ValueError(f"val_files for {model_name} is empty")
+
+    print(f"\n[BuildBank] Auto threshold for {model_name} on {len(val_files)} images")
+    seg = _init_segmentor()
+    masks = [None] * len(val_files)
+    if seg is not None:
+        seg.attach()
+        try:
+            for i, pth in enumerate(val_files):
+                masks[i] = _get_mask_for_image(seg, pth)
+        finally:
+            try:
+                seg.detach()
+            except Exception:
+                pass
+        torch.cuda.synchronize()
+
+    scores = []
+    for i, pth in enumerate(val_files):
+        img_t, _ = preprocess_any_size(pth)
+        score = _compute_score(img_t, model_engine, bank, object_mask=masks[i])
+        scores.append(score)
+        print(f"   {pth.name:<35} score={score:.4f}")
+
+    scores_np = np.array(scores, dtype=np.float32)
+    mean_score = float(scores_np.mean())
+    std_score = float(scores_np.std())
+    threshold = mean_score + n_sigma * std_score
+    print(f"[BuildBank] threshold[{model_name}] = {mean_score:.4f} + {n_sigma} * {std_score:.4f} = {threshold:.4f}")
+    _save_threshold_to_json(project_root, threshold, model_name=model_name)
+    return threshold
+
+
+def _group_good_images_by_position(goods_dir: Path) -> dict[str, list[Path]]:
+    grouped = {"body": [], "cap": []}
+    for path in sorted(goods_dir.iterdir()):
+        if path.suffix.lower() not in (".png", ".jpg", ".jpeg"):
+            continue
+        lower_name = path.name.lower()
+        if lower_name.startswith("body_"):
+            grouped["body"].append(path)
+        elif lower_name.startswith("cap_"):
+            grouped["cap"].append(path)
+    return grouped
+
+
+def _build_single_bank(train_files: list[Path], model_engine, bank_path: Path) -> torch.Tensor:
+    all_feats = []
+    with torch.inference_mode():
+        for pth in train_files:
+            img_t, _ = preprocess_any_size(pth)
+            feat = model_engine(img_t)
+            all_feats.append(feat.cpu())
+
+    full_bank = torch.cat(all_feats, dim=0)
+    if full_bank.shape[0] > TARGET_BANK_SIZE:
+        indices = torch.linspace(0, full_bank.shape[0] - 1, steps=TARGET_BANK_SIZE).long()
+        bank = full_bank[indices]
+    else:
+        bank = full_bank
+    torch.save(bank, bank_path)
+    print(f"[BuildBank] Saved {bank_path.name} shape={tuple(bank.shape)}")
+    return bank
+
+
+def build_bank(goods_dir: Path,
+               output_dir: Path | None = None,
+               project_root: Path | None = None,
+               train_ratio: float = 0.8,
+               n_sigma: float = 3.0,
+               seed: int = 42):
+    goods_dir = Path(goods_dir)
+    if output_dir is None:
+        output_dir = goods_dir.parent / "memory_bank"
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if project_root is None:
+        project_root = goods_dir.parent
+    project_root = Path(project_root)
+
+    grouped_files = _group_good_images_by_position(goods_dir)
+    if not any(grouped_files.values()):
+        raise FileNotFoundError(f"Khong tim thay anh body_/cap_ trong: {goods_dir}")
+
+    model_engine = get_engine(STD_W, STD_H)
+    built_banks = {}
+
+    for model_name, image_files in grouped_files.items():
+        if not image_files:
+            print(f"[BuildBank] Skip {model_name}: no images")
+            continue
+
+        train_files, val_files = _split_train_val(image_files, train_ratio, seed)
+        bank_path = output_dir / POSITION_BANK_FILENAMES[model_name]
+        print(f"[BuildBank] Build {model_name}: total={len(image_files)} train={len(train_files)} val={len(val_files)}")
+        bank = _build_single_bank(train_files, model_engine, bank_path)
+        bank_on_device = bank.to(device).contiguous()
+        auto_threshold(
+            bank=bank_on_device,
+            val_files=val_files,
+            model_engine=model_engine,
+            project_root=project_root,
+            n_sigma=n_sigma,
+            model_name=model_name,
+        )
+        built_banks[model_name] = bank_on_device
+
+    return built_banks
